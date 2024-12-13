@@ -1,0 +1,3 @@
+/home/yassen/FMI/SecondYear/DataStructures/Project/fmisql/build/CMakeFiles/fmisql.dir
+/home/yassen/FMI/SecondYear/DataStructures/Project/fmisql/build/CMakeFiles/edit_cache.dir
+/home/yassen/FMI/SecondYear/DataStructures/Project/fmisql/build/CMakeFiles/rebuild_cache.dir
