@@ -1,1 +1,0 @@
-/usr/bin/c++ -Wl,--dependency-file=CMakeFiles/fmisql.dir/link.d CMakeFiles/fmisql.dir/src/main.cpp.o -o fmisql
