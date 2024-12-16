@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSION FALSE)
 
 add_executable(fmisql
+	src/cli/cli.cpp
+	src/cli/interp.cpp
+	src/cli/parser.cpp
 	src/main.cpp
 )
 
