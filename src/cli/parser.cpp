@@ -1,9 +1,12 @@
 #include "parser.hpp"
 
 #include "../data_types.hpp"
+#include "../commands/create_table.hpp"
 
-#include <cstring>
+#include <cstddef>
+#include <cstdint>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -72,7 +75,7 @@ parse_columns(std::string_view columns_str) {
 	return table_columns;
 }
 
-std::vector<std::string_view> parse_inserts(std::string_view inserts_str) {
+std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 
 	/**
 	 *  {(<value>, ...), ...}
@@ -85,35 +88,71 @@ std::vector<std::string_view> parse_inserts(std::string_view inserts_str) {
 	}
 	pos++;
 
-	std::vector<std::string_view> table_inserts;
+	std::vector<ExampleRow> table_inserts;
 
-	// while (inserts_str[pos] != '}') {
-	// 	/**
-	// 	 *      {(<value>, ...), ...}
-	// 	 *      ^^
-	// 	 * spaces allowed
-	// 	 */
-	// 	pos = inserts_str.find_first_not_of(" ,", pos);
+	while (inserts_str[pos] != '}') {
+		pos = inserts_str.find_first_of("(", pos);
+		/**
+		 * {(<value>, ...), ...}
+		 *  |
+		 * pos
+		 */
+		if (inserts_str[pos] != '(') {
+			throw std::runtime_error("expected '('\n");
+		}
+		pos++;
 
-	// 	/**
-	// 	 * {(<value>, ...), ...}
-	// 	 *  |^^^^^^^^^^^^^^^
-	// 	 * pos + next_size
-	// 	 */
-	// 	std::size_t next_size = inserts_str.find_first_of(":", pos) - pos;
-	// 	std::string_view column_name = columns_str.substr(pos, next_size);
-	// 	pos = pos + next_size + 1;
-	// 	std::string_view row_str = inserts_str.substr(pos, );
+		ExampleRow row;
 
-	// 	while (row_str[pos] != ')') {
-	// 		/**
-	// 		 *     {(<value>, ...), ...}
-	// 		 *      ^^
-	// 		 * spaces allowed
-	// 		 */
-	// 		pos = inserts_str.find_first_not_of(" ,", pos);
-	// 	}
-	// }
+		while (inserts_str[pos] != ')') {
+			/**
+			 *     {(<value>, ...), ...}
+			 *      ^^
+			 * spaces allowed
+			 */
+			pos = inserts_str.find_first_not_of(" ,", pos);
+
+			// TEMPORARY
+			/**
+			 * {(<ID>, <Name>, <Value>), ...}
+			 *   |^^^^
+			 *  pos + next_size
+			 */
+			std::size_t next_size = inserts_str.find_first_of(",", pos) - pos;
+			// std::cout << inserts_str.substr(pos, next_size) << '\n';
+			row.ID = std::stoi(inserts_str.substr(pos, next_size).data());
+			pos = pos + next_size;
+			pos = inserts_str.find_first_not_of(" ,\"", pos);
+			/**
+			 * {(<ID>, "<Name>", <Value>), ...}
+			 *         |^^^^^^^
+			 *        pos + next_size
+			 */
+			next_size = inserts_str.find_first_of(",\"", pos) - pos;
+			// std::cout << inserts_str.substr(pos, next_size) << '\n';
+			inserts_str.copy(row.Name, next_size, pos);
+			pos = pos + next_size + 1;
+			pos = inserts_str.find_first_not_of(" ,", pos);
+			/**
+			 * {(<ID>, <Name>, <Value>), ...}
+			 *                 |^^^^^^^
+			 *                pos + next_size
+			 */
+			next_size = inserts_str.find_first_of(")", pos) - pos;
+			// std::cout << inserts_str.substr(pos, next_size) << '\n';
+			row.Value = std::stoi(inserts_str.substr(pos, next_size).data());
+			pos = pos + next_size;
+			// pos = inserts_str.find_first_not_of(" ,", pos);
+		}
+		pos++;
+
+		std::cout << "row:\n" <<
+			"  " << row.ID <<
+			"  " << row.Name <<
+			"  " << row.Value << '\n';
+		
+		table_inserts.push_back(row);
+	}
 
 	return table_inserts;
 }
@@ -136,6 +175,7 @@ void parse_line(std::string_view line) {
 	pos = line.find_first_not_of(" ", pos + next_size);
 
 	if (command == "CreateTable") {
+		std::string_view table_name;
 		std::unordered_map<std::string_view, DataType> table_columns;
 		try {
 			/**
@@ -144,7 +184,7 @@ void parse_line(std::string_view line) {
 			 *            pos + next_size
 			 */
 			next_size = line.find_first_of(" ", pos) - pos;
-			std::string_view table_name = line.substr(pos, next_size);
+			table_name = line.substr(pos, next_size);
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
@@ -171,8 +211,7 @@ void parse_line(std::string_view line) {
 		// 	}
 		// }
 
-		// TODO:
-		// create_table(table_name, table_columns);
+		create_table(table_name, table_columns);
 
 	} else if (command == "DropTable") {
 		try {
@@ -213,12 +252,15 @@ void parse_line(std::string_view line) {
 		// show info about the actual table
 
 	} else if (command == "Select") {
-
+		std::vector<ExampleRow> selected_rows;
+		
+		//
 
 	} else if (command == "Remove") {
+		// TODO
 
 	} else if (command == "Insert") {
-		std::vector<std::string_view> table_inserts;
+		std::vector<ExampleRow> table_inserts;
 		try {
 			/**
 			 * Insert INTO <table name> {(<value>, ...), ...}
@@ -243,8 +285,8 @@ void parse_line(std::string_view line) {
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
-			 * Insert INTO <table name> {(<column 1>, <column 2>, ...), ...}
-			 *                          |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+			 * Insert INTO <table name> {(<value>, ...), ...}
+			 *                          |^^^^^^^^^^^^^^^^^^^^^
 			 *                         pos + next_size
 			 */
 			table_inserts = parse_inserts(line.substr(pos));
@@ -254,7 +296,6 @@ void parse_line(std::string_view line) {
 		}
 
 		// TODO:
-		// create_table(table_name, table_columns);
 
 	} else {
 		std::cout << command << ": unknown command\n";
