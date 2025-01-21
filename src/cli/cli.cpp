@@ -20,8 +20,7 @@ void cli() {
 		if (line == "Quit" || std::cin.eof()) {
 			break;
 		} else if (!line.empty()) {
-			// interpret(parse_line(line));
-			interpret(line);
+			parse_line(line);
 		}
 	}
 

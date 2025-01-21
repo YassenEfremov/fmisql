@@ -3,7 +3,6 @@
 
 #include "../data_types.hpp"
 
-#include <string>
 #include <string_view>
 #include <vector>
 #include <unordered_map>
@@ -36,25 +35,15 @@
 // };
 
 
-// /**
-//  * @brief Parse the given command line
-//  */
-// std::vector<std::string> parse_line(std::string &line);
+std::unordered_map<std::string_view, DataType>
+parse_columns(std::string_view columns_str);
+
+std::vector<std::string_view> parse_inserts(std::string_view columns_str);
 
 /**
- * @brief Parse the given table columns
+ * @brief Parse the given command line
  */
-std::unordered_map<std::string, DataType> parse_columns(std::string &columns);
-
-/**
- * @brief Parse the given table inserts
- */
-std::vector<std::string> parse_inserts(std::string &inserts);
-
-/**
- * @brief Interpret the command
- */
-void interpret(std::string_view line);
+void parse_line(std::string_view line);
 
 
 #endif // PARSER_HPP
