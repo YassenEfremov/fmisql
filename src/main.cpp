@@ -1,15 +1,15 @@
 #include "cli/cli.hpp"
-#include "commands/create_table.hpp"
-#include "commands/drop_table.hpp"
-#include "commands/list_tables.hpp"
-#include "tables_info.hpp"
+// #include "commands/create_table.hpp"
+// #include "commands/drop_table.hpp"
+// #include "commands/list_tables.hpp"
+// #include "tables_info.hpp"
 
 #include <iostream>
 
 
 int main() {
 
-	// cli();
+	cli();
 
 	// tables_info_add("table1");
 	// tables_info_add("table2");
@@ -23,14 +23,14 @@ int main() {
 
 	// tables_info_remove("table1");
 
-	create_table("students", {{"ID", INT}, {"Name", STRING}, {"BDay", DATE}});
+	// create_table("students", {{"ID", INT}, {"Name", STRING}, {"BDay", DATE}});
 
-	auto tables = list_tables();
-	for (auto table : tables) {
-		std::cout << "[] " << table << '\n';
-	}
+	// auto tables = list_tables();
+	// for (auto table : tables) {
+	// 	std::cout << "[] " << table << '\n';
+	// }
 
-	drop_table("students");
+	// drop_table("students");
 
 	return 0;
 }

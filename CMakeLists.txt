@@ -11,13 +11,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSION FALSE)
 
 add_executable(fmisql
-	# src/cli/cli.cpp
-	# src/cli/interp.cpp
-	# src/cli/parser.cpp
+	src/cli/cli.cpp
+	src/cli/parser.cpp
 	src/commands/create_table.cpp
-	src/commands/drop_table.cpp
-	src/commands/list_tables.cpp
-	src/commands/table_info.cpp
+	# src/commands/drop_table.cpp
+	# src/commands/list_tables.cpp
+	# src/commands/table_info.cpp
 	src/tables_info.cpp
 	src/main.cpp
 )

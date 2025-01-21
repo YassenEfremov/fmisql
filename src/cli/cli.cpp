@@ -1,6 +1,5 @@
 #include "cli.hpp"
 
-#include "interp.hpp"
 #include "parser.hpp"
 
 #include <iostream>
@@ -21,8 +20,8 @@ void cli() {
 		if (line == "Quit" || std::cin.eof()) {
 			break;
 		} else if (!line.empty()) {
-
-			interpret(parse(line));
+			// interpret(parse_line(line));
+			interpret(line);
 		}
 	}
 
