@@ -1,6 +1,7 @@
 #include "cli.hpp"
 
 #include "parser.hpp"
+#include "../pager.hpp"
 
 #include <iostream>
 #include <string>
@@ -18,6 +19,7 @@ void cli() {
 		std::getline(std::cin, line);
 
 		if (line == "Quit" || std::cin.eof()) {
+			Pager::free();
 			break;
 		} else if (!line.empty()) {
 			parse_line(line);

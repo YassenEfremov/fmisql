@@ -3,6 +3,7 @@
 
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
+#include "../pager.hpp"
 
 #include <string_view>
 #include <vector>

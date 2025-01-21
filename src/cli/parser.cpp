@@ -2,6 +2,7 @@
 
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
+#include "../pager.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -252,9 +253,15 @@ void parse_line(std::string_view line) {
 		// show info about the actual table
 
 	} else if (command == "Select") {
-		std::vector<ExampleRow> selected_rows;
+		// std::vector<ExampleRow> selected_rows;
+		// std::cout << ""
 		
-		//
+		// magic
+		ExampleRow row;
+		for (int i = 0; i < Pager::rows_count; i++) {
+			row.deserialize(Pager::row_slot(i));
+			std::cout << "| " << row.ID << " | " << row.Name << " | " << row.Value << " |\n";
+		}
 
 	} else if (command == "Remove") {
 		// TODO
@@ -295,7 +302,11 @@ void parse_line(std::string_view line) {
 			std::cout << "not enough arguments given\n";
 		}
 
-		// TODO:
+		// magic
+		for (auto row : table_inserts) {
+			row.serialize(Pager::row_slot(Pager::rows_count));
+			Pager::rows_count++;
+		}
 
 	} else {
 		std::cout << command << ": unknown command\n";

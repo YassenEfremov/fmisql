@@ -10,14 +10,6 @@
 #include <unordered_map>
 
 
-// temporary row structure
-struct ExampleRow {
-    std::uint32_t ID;
-    char Name[256];
-    std::uint32_t Value;
-};
-
-
 void create_table(std::string_view name,
                   const std::unordered_map<std::string_view, DataType> &columns);
 
