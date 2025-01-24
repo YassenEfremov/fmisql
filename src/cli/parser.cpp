@@ -4,6 +4,8 @@
 #include "../schema.hpp"
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
+#include "../commands/insert.hpp"
+#include "../commands/select.hpp"
 #include "../pager.hpp"
 
 #include <cstddef>
@@ -128,12 +130,13 @@ std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 			pos = inserts_str.find_first_not_of(" ,\"", pos);
 			/**
 			 * {(<ID>, "<Name>", <Value>), ...}
-			 *         |^^^^^^^
-			 *        pos + next_size
+			 *          |^^^^^^
+			 *         pos + next_size
 			 */
 			next_size = inserts_str.find_first_of(",\"", pos) - pos;
 			// std::cout << inserts_str.substr(pos, next_size) << '\n';
 			inserts_str.copy(row.Name, next_size, pos);
+			row.Name[next_size] = '\0';
 			pos = pos + next_size + 1;
 			pos = inserts_str.find_first_not_of(" ,", pos);
 			/**
@@ -263,18 +266,14 @@ void parse_line(std::string_view line) {
 		// std::cout << ""
 
 		std::cout << "--------------------\n";
-		
-		// magic
-		ExampleRow row;
-		for (int i = 0; i < Pager::rows_count; i++) {
-			row.deserialize(Pager::row_slot(i));
-			std::cout << "| " << row.ID << " | " << row.Name << " | " << row.Value << " |\n";
-		}
+
+		select();
 
 	} else if (command == "Remove") {
 		// TODO
 
 	} else if (command == "Insert") {
+		std::string_view table_name;
 		std::vector<ExampleRow> table_inserts;
 		try {
 			/**
@@ -296,7 +295,7 @@ void parse_line(std::string_view line) {
 			 *            pos + next_size
 			 */
 			next_size = line.find_first_of(" ", pos) - pos;
-			std::string_view table_name = line.substr(pos, next_size);
+			table_name = line.substr(pos, next_size);
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
@@ -310,11 +309,7 @@ void parse_line(std::string_view line) {
 			std::cout << "not enough arguments given\n";
 		}
 
-		// magic
-		for (auto row : table_inserts) {
-			row.serialize(Pager::row_slot(Pager::rows_count));
-			Pager::rows_count++;
-		}
+		insert(table_name, table_inserts);
 
 	} else {
 		std::cout << command << ": unknown command\n";

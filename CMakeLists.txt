@@ -17,9 +17,12 @@ add_executable(fmisql
 	# src/commands/drop_table.cpp
 	# src/commands/list_tables.cpp
 	# src/commands/table_info.cpp
+	src/commands/insert.cpp
+	src/commands/select.cpp
+	src/btree.cpp
 	src/pager.cpp
 	src/schema.cpp
-	src/tables_info.cpp
+	# src/tables_info.cpp
 	src/main.cpp
 )
 
