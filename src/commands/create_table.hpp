@@ -10,8 +10,12 @@
 #include <unordered_map>
 
 
+namespace fmisql {
+
 void create_table(std::string_view name,
-                  const std::unordered_map<std::string_view, DataType> &columns);
+                  const std::unordered_map<std::string_view, sql_types::Id> &columns);
+
+} // namespace fmisql
 
 
 #endif // CREATE_TABLE_HPP

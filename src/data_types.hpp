@@ -2,11 +2,19 @@
 #define DATA_TYPES_HPP
 
 
-enum DataType {
-	 INT,
-	 DATE,
-	 STRING
+namespace fmisql::sql_types {
+
+enum class Id {
+	INT,
+	DATE,
+	STRING
 };
+
+using Int = int;
+using String = char[256];
+using Date = int;
+
+} // namespace fmisql
 
 
 #endif // DATA_TYPES_HPP

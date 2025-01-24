@@ -1,5 +1,5 @@
 #include "cli/cli.hpp"
-#include "schema.hpp"
+#include "pager.hpp"
 // #include "commands/create_table.hpp"
 // #include "commands/drop_table.hpp"
 // #include "commands/list_tables.hpp"
@@ -10,9 +10,11 @@
 
 int main() {
 
-	Schema::init();
+	fmisql::db_init();
 
-	cli();
+	fmisql::cli();
+
+	fmisql::db_deinit();
 
 	// tables_info_add("table1");
 	// tables_info_add("table2");

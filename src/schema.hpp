@@ -13,11 +13,14 @@
 #include <cstring>
 
 
-constexpr int max_table_name_size = 256;
+namespace fmisql {
+
+constexpr std::size_t max_table_name_size = 256;
 
 
 struct SchemaRow {
-    char name[max_table_name_size];
+	sql_types::String name;
+	sql_types::Int page;
 
 	void serialize(void *dst) {
 		std::memcpy((std::uint8_t *)dst, &this->name, sizeof name);
@@ -40,10 +43,6 @@ class Schema {
 public:
 	static int rows_count;
 	static void *pages[table_max_pages];
-
-	static void init() {
-
-	}
 
 	static void add(std::string_view name) {
 		SchemaRow row;
@@ -81,6 +80,8 @@ public:
 		}
 	}
 };
+
+} // namespace fmisql
 
 
 #endif // SCHEMA_HPP

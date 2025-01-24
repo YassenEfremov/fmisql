@@ -8,12 +8,15 @@
 #include <string_view>
 
 
+namespace fmisql {
+
 class Column {
 public:
-	Column(std::string_view name, DataType type) : name(name), type(type) {}
+	Column(std::string_view name, sql_types::Id type)
+		: name(name), type(type) {}
 
 	std::string_view name;
-	DataType type;
+	sql_types::Id type;
 private:
 };
 
@@ -29,6 +32,8 @@ private:
 
 	std::vector<int> pages;
 };
+
+} // namespace fmisql
 
 
 #endif // CLASSES_HPP

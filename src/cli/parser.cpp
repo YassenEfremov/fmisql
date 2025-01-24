@@ -16,6 +16,8 @@
 #include <iostream>
 
 
+namespace fmisql {
+
 std::vector<Column> parse_columns(std::string_view columns_str) {
 
 	/**
@@ -57,13 +59,13 @@ std::vector<Column> parse_columns(std::string_view columns_str) {
 		std::string_view column_type_str = columns_str.substr(pos, next_size);
 		pos = pos + next_size;
 
-		DataType column_type;
+		sql_types::Id column_type;
 		if (column_type_str == "Int") {
-			column_type = DataType::INT;
+			column_type = sql_types::Id::INT;
 		} else if (column_type_str == "String") {
-			column_type = DataType::STRING;
+			column_type = sql_types::Id::STRING;
 		} else if (column_type_str == "Date") {
-			column_type = DataType::DATE;
+			column_type = sql_types::Id::DATE;
 		} else {
 			throw std::runtime_error(
 				"unknown data type: " + std::string(column_type_str) + '\n'
@@ -318,3 +320,5 @@ void parse_line(std::string_view line) {
 		std::cout << command << ": unknown command\n";
 	}
 }
+
+} // namespace fmisql

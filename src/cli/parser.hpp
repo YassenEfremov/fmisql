@@ -36,6 +36,7 @@
 
 // };
 
+namespace fmisql {
 
 std::vector<Column> parse_columns(std::string_view columns_str);
 
@@ -45,6 +46,8 @@ std::vector<ExampleRow> parse_inserts(std::string_view columns_str);
  * @brief Parse the given command line
  */
 void parse_line(std::string_view line);
+
+} // namespace fmisql
 
 
 #endif // PARSER_HPP

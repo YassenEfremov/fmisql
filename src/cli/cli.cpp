@@ -1,11 +1,14 @@
 #include "cli.hpp"
 
 #include "parser.hpp"
-#include "../pager.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
+
+
+namespace fmisql
+{
 
 // const int line_length = 100;
 
@@ -19,7 +22,6 @@ void cli() {
 		std::getline(std::cin, line);
 
 		if (line == "Quit" || std::cin.eof()) {
-			Pager::free();
 			break;
 		} else if (!line.empty()) {
 			parse_line(line);
@@ -46,3 +48,5 @@ void cli() {
 	// 	}
 	// }
 }
+
+} // namespace fmisql
