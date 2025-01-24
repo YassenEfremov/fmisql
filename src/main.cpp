@@ -1,4 +1,5 @@
 #include "cli/cli.hpp"
+#include "schema.hpp"
 // #include "commands/create_table.hpp"
 // #include "commands/drop_table.hpp"
 // #include "commands/list_tables.hpp"
@@ -8,6 +9,8 @@
 
 
 int main() {
+
+	Schema::init();
 
 	cli();
 

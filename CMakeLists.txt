@@ -18,6 +18,7 @@ add_executable(fmisql
 	# src/commands/list_tables.cpp
 	# src/commands/table_info.cpp
 	src/pager.cpp
+	src/schema.cpp
 	src/tables_info.cpp
 	src/main.cpp
 )

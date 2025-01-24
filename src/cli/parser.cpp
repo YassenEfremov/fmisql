@@ -1,5 +1,7 @@
 #include "parser.hpp"
 
+#include "../classes.hpp"
+#include "../schema.hpp"
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
 #include "../pager.hpp"
@@ -11,12 +13,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <unordered_map>
 #include <iostream>
 
 
-std::unordered_map<std::string_view, DataType>
-parse_columns(std::string_view columns_str) {
+std::vector<Column> parse_columns(std::string_view columns_str) {
 
 	/**
 	 *  (<column name>:<type>, ...)
@@ -29,7 +29,7 @@ parse_columns(std::string_view columns_str) {
 	}
 	pos++;
 
-	std::unordered_map<std::string_view, DataType> table_columns;
+	std::vector<Column> table_columns;
 
 	while (columns_str[pos] != ')') {
 		/**
@@ -70,7 +70,7 @@ parse_columns(std::string_view columns_str) {
 			);
 		}
 
-		table_columns.insert({column_name, column_type});
+		table_columns.push_back(Column(column_name, column_type));
 	}
 
 	return table_columns;
@@ -177,7 +177,7 @@ void parse_line(std::string_view line) {
 
 	if (command == "CreateTable") {
 		std::string_view table_name;
-		std::unordered_map<std::string_view, DataType> table_columns;
+		std::vector<Column> table_columns;
 		try {
 			/**
 			 * CreateTable <table name> (<column name>:<type>, ...)
@@ -204,15 +204,18 @@ void parse_line(std::string_view line) {
 		}
 
 		// for (auto tc : table_columns) {
-		// 	std::cout << tc.first << " - ";
-		// 	switch (tc.second) {
+		// 	std::cout << tc.name << " - ";
+		// 	switch (tc.type) {
 		// 		case DataType::INT: std::cout << "INT\n"; break;
 		// 		case DataType::STRING: std::cout << "STRING\n"; break;
 		// 		case DataType::DATE: std::cout << "DATE\n"; break;
 		// 	}
 		// }
 
-		create_table(table_name, table_columns);
+		// create_table(table_name, table_columns);
+		// Table table(table_columns);
+		Schema::add(table_name);
+		std::cout << "Table " << table_name << " created!\n";
 
 	} else if (command == "DropTable") {
 		try {
@@ -233,7 +236,8 @@ void parse_line(std::string_view line) {
 
 	} else if (command == "ListTables") {
 		// TODO:
-		// list the actual tables
+		std::cout << "There are " << Schema::rows_count << " table/s in the database:\n";
+		Schema::list();
 
 	} else if (command == "TableInfo") {
 		try {
@@ -255,6 +259,8 @@ void parse_line(std::string_view line) {
 	} else if (command == "Select") {
 		// std::vector<ExampleRow> selected_rows;
 		// std::cout << ""
+
+		std::cout << "--------------------\n";
 		
 		// magic
 		ExampleRow row;

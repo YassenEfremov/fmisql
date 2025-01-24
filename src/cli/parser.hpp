@@ -1,13 +1,13 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
+#include "../classes.hpp"
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
 #include "../pager.hpp"
 
 #include <string_view>
 #include <vector>
-#include <unordered_map>
 
 
 // struct Token {
@@ -37,8 +37,7 @@
 // };
 
 
-std::unordered_map<std::string_view, DataType>
-parse_columns(std::string_view columns_str);
+std::vector<Column> parse_columns(std::string_view columns_str);
 
 std::vector<ExampleRow> parse_inserts(std::string_view columns_str);
 
