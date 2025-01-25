@@ -79,7 +79,8 @@ public:
 		void *page = get_page(page_number);
 		// int row_offset = (row_number % rows_per_page) * row_size;
 		int row_offset = LEAF_NODE_HEADER_SIZE
-			+ row_number * (LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE) + LEAF_NODE_KEY_SIZE;
+			+ row_number * (LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE)
+			+ LEAF_NODE_KEY_SIZE;
 		return (std::uint8_t *)page + row_offset;
 	}
 

@@ -5,6 +5,7 @@
 #include "../data_types.hpp"
 #include "../commands/create_table.hpp"
 #include "../pager.hpp"
+#include "../statement.hpp"
 
 #include <string_view>
 #include <vector>
@@ -42,10 +43,12 @@ std::vector<Column> parse_columns(std::string_view columns_str);
 
 std::vector<ExampleRow> parse_inserts(std::string_view columns_str);
 
+void parse_conds(std::string_view columns_str);
+
 /**
  * @brief Parse the given command line
  */
-void parse_line(std::string_view line);
+Statement parse_line(std::string_view line);
 
 } // namespace fmisql
 

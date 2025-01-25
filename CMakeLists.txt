@@ -22,6 +22,7 @@ add_executable(fmisql
 	src/btree.cpp
 	src/pager.cpp
 	src/schema.cpp
+	src/statement.cpp
 	# src/tables_info.cpp
 	src/main.cpp
 )

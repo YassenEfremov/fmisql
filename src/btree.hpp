@@ -5,6 +5,9 @@
 #include <cstdint>
 
 
+namespace fmisql {
+    
+
 constexpr int page_size = 4096;
 constexpr int table_max_pages = 100;
 constexpr int row_size = 4 + 256 + 4;
@@ -86,6 +89,8 @@ public:
 
 private:
 };
+
+} // namespace fmisql
 
 
 #endif // BTREE_HPP

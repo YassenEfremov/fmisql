@@ -1,10 +1,12 @@
 #ifndef SELECT_HPP
 #define SELECT_HPP
 
+#include <string_view>
+
 
 namespace fmisql {
 
-void select();
+void select(std::string_view table_name);
 
 } // namespace fmisql
 

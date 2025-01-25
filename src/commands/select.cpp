@@ -11,9 +11,12 @@
 
 namespace fmisql {
 
-void select() {
+void select(std::string_view table_name) {
 
 	LeafNode node(Pager::get_page(0));
+
+	std::cout << "| ID |   Name   | Value |\n"
+	             "-------------------------\n";
 
 	ExampleRow row;
 	for (int i = 0; i < *node.get_cell_count(); i++) {

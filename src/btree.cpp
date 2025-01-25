@@ -3,6 +3,8 @@
 #include <cstdint>
 
 
+namespace fmisql {
+
 LeafNode::LeafNode(void *data) : data(data) {}
 
 std::uint32_t *LeafNode::get_cell_count() {
@@ -20,3 +22,5 @@ std::uint32_t *LeafNode::get_cell_key(int cell_number) {
 void *LeafNode::get_cell_value(int cell_number) {
 	return (std::uint8_t *)this->get_cell(cell_number) + LEAF_NODE_KEY_SIZE;
 }
+
+} // namespace fmisql

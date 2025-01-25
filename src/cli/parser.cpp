@@ -1,12 +1,9 @@
 #include "parser.hpp"
 
 #include "../classes.hpp"
-#include "../schema.hpp"
 #include "../data_types.hpp"
-#include "../commands/create_table.hpp"
-#include "../commands/insert.hpp"
-#include "../commands/select.hpp"
 #include "../pager.hpp"
+#include "../statement.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -163,7 +160,7 @@ std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 	return table_inserts;
 }
 
-void parse_line(std::string_view line) {
+Statement parse_line(std::string_view line) {
 
 	// TODO: error handling
 
@@ -202,82 +199,127 @@ void parse_line(std::string_view line) {
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
-			return;
+			return Statement(Statement::Type::INVALID);
 		} catch (const std::runtime_error &e) {
 			std::cout << e.what();
-			return;
+			return Statement(Statement::Type::INVALID);
 		}
 
-		// for (auto tc : table_columns) {
-		// 	std::cout << tc.name << " - ";
-		// 	switch (tc.type) {
-		// 		case DataType::INT: std::cout << "INT\n"; break;
-		// 		case DataType::STRING: std::cout << "STRING\n"; break;
-		// 		case DataType::DATE: std::cout << "DATE\n"; break;
-		// 	}
-		// }
-
-		// create_table(table_name, table_columns);
-		// Table table(table_columns);
-		Schema::add(table_name);
-		std::cout << "Table " << table_name << " created!\n";
+		return Statement(Statement::Type::CREATE_TABLE, table_name);
 
 	} else if (command == "DropTable") {
+		std::string_view table_name;
 		try {
 			/**
-			 * DropTable <table name>
-			 *           |^^^^^^^^^^^|
-			 *          pos         npos
+			 * DropTable <table>
+			 *           |^^^^^^|
+			 *          pos    npos
 			 */
-			std::string_view table_name = line.substr(pos);
+			table_name = line.substr(pos);
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
-			return;
+			return Statement(Statement::Type::INVALID);
 		}
 
-		// TODO:
-		// drop the actual table
+		return Statement(Statement::Type::DROP_TABLE, table_name);
 
 	} else if (command == "ListTables") {
-		// TODO:
-		std::cout << "There are " << Schema::rows_count << " table/s in the database:\n";
-		Schema::list();
+
+		return Statement(Statement::Type::LIST_TABLES);
 
 	} else if (command == "TableInfo") {
+		std::string_view table_name;
 		try {
 			/**
-			 * TableInfo <table name>
-			 *           |^^^^^^^^^^^|
-			 *          pos         npos
+			 * TableInfo <table>
+			 *           |^^^^^^|
+			 *          pos    npos
 			 */
-			std::string_view table_name = line.substr(pos);
+			table_name = line.substr(pos);
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
-			return;
+			return Statement(Statement::Type::INVALID);
 		}
 
-		// TODO:
-		// show info about the actual table
+		return Statement(Statement::Type::TABLE_INFO, table_name);
 
 	} else if (command == "Select") {
-		// std::vector<ExampleRow> selected_rows;
-		// std::cout << ""
+		std::string_view table_name;
+		try {
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 *        |^^^^^^^^^
+			 *       pos + next_size
+			 */
+			next_size = line.find_first_of(" ", pos) - pos;
+			std::string_view column_names = line.substr(pos, next_size);
+			pos = line.find_first_not_of(" ", pos + next_size);
 
-		std::cout << "--------------------\n";
+			/**
+			 * Select <columns> FROM <table> WHERE <conditions> ORDER BY <column>
+			 *                  |^^^^
+			 *                 pos + next_size
+			 */
+			next_size = line.find_first_of(" ", pos) - pos;
+			std::string_view kw_from = line.substr(pos, next_size);
+			if (kw_from != "FROM") {
+				std::cout << "expected keyword FROM\n";
+				return Statement(Statement::Type::INVALID);
+			}
+			pos = line.find_first_not_of(" ", pos + next_size);
 
-		select();
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 *                       |^^^^^^^
+			 *                      pos + next_size
+			 */
+			next_size = line.find_first_of(" ", pos) - pos;
+			table_name = line.substr(pos, next_size);
+			pos = line.find_first_not_of(" ", pos + next_size);
+
+			if (pos != std::string_view::npos) {
+				/**
+				 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+				 *                               |^^^^^
+				 *                              pos + next_size
+				 */
+				next_size = line.find_first_of(" ", pos) - pos;
+				std::string_view kw_where = line.substr(pos, next_size);
+				if (kw_from != "WHERE") {
+					std::cout << "expected keyword WHERE\n";
+					return Statement(Statement::Type::INVALID);
+				}
+				pos = line.find_first_not_of(" ", pos + next_size);
+
+				/**
+				 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+				 *                                     |^^^^^^
+				 *                                    pos + next_size
+				 */
+				// conditions = parse_conditions(line.substr(pos));
+			}
+
+		} catch (const std::out_of_range &e) {
+			std::cout << "not enough arguments given\n";
+			return Statement(Statement::Type::INVALID);
+		}
+
+		return Statement(Statement::Type::SELECT, table_name);
 
 	} else if (command == "Remove") {
+		
 		// TODO
+
+		return Statement(Statement::Type::REMOVE);
 
 	} else if (command == "Insert") {
 		std::string_view table_name;
-		std::vector<ExampleRow> table_inserts;
+		std::vector<ExampleRow> rows;
 		try {
 			/**
-			 * Insert INTO <table name> {(<value>, ...), ...}
+			 * Insert INTO <table> {(<value>, ...), ...}
 			 *        |^^^^
 			 *       pos + next_size
 			 */
@@ -285,13 +327,13 @@ void parse_line(std::string_view line) {
 			std::string_view kw_into = line.substr(pos, next_size);
 			if (kw_into != "INTO") {
 				std::cout << "expected keyword INTO\n";
-				return;
+				return Statement(Statement::Type::INVALID);
 			}
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
-			 * Insert INTO <table name> {(<value>, ...), ...}
-			 *             |^^^^^^^^^^^^
+			 * Insert INTO <table> {(<value>, ...), ...}
+			 *             |^^^^^^^
 			 *            pos + next_size
 			 */
 			next_size = line.find_first_of(" ", pos) - pos;
@@ -299,20 +341,22 @@ void parse_line(std::string_view line) {
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
-			 * Insert INTO <table name> {(<value>, ...), ...}
-			 *                          |^^^^^^^^^^^^^^^^^^^^^
-			 *                         pos + next_size
+			 * Insert INTO <table> {(<value>, ...), ...}
+			 *                     |^^^^^^^^^^^^^^^^^^^^^
+			 *                    pos + next_size
 			 */
-			table_inserts = parse_inserts(line.substr(pos));
+			rows = parse_inserts(line.substr(pos));
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
+			return Statement(Statement::Type::INVALID);
 		}
 
-		insert(table_name, table_inserts);
+		return Statement(Statement::Type::INSERT, table_name, rows);
 
 	} else {
 		std::cout << command << ": unknown command\n";
+		return Statement(Statement::Type::INVALID);
 	}
 }
 
