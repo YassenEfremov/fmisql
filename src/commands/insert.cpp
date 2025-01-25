@@ -31,7 +31,7 @@ void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow
 		}
 
 		try {
-			node.insert(rows[i].ID, rows[i]);
+			// node.insert(rows[i].ID, rows[i]);
 		} catch (const std::runtime_error &e) {
 			std::cout << "error: " << e.what() << '\n';
 		}

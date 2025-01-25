@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
+#include "data_types.hpp"
+
 #include <cstdint>
 
 
@@ -10,7 +12,9 @@ constexpr const char db_filename[] = "fmisql.db";
 
 constexpr int page_size = 4096;
 constexpr int table_max_pages = 100;
-constexpr int row_size = 4 + 256 + 4;
+constexpr int schema_row_size = sizeof(sql_types::String) +
+                                sizeof(sql_types::Int) +
+                                sizeof(sql_types::String);
 
 /*
  * Common Node Header Layout
@@ -37,16 +41,16 @@ constexpr std::uint32_t LEAF_NODE_HEADER_SIZE =
  */
 constexpr std::uint32_t LEAF_NODE_KEY_SIZE = sizeof(std::uint32_t);
 const std::uint32_t LEAF_NODE_KEY_OFFSET = 0;
-const std::uint32_t LEAF_NODE_VALUE_SIZE = row_size;
+const std::uint32_t LEAF_NODE_VALUE_SIZE = schema_row_size;
 const std::uint32_t LEAF_NODE_VALUE_OFFSET =
     LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
-constexpr std::uint32_t LEAF_NODE_CELL_SIZE = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
+constexpr std::uint32_t leaf_node_pair_size = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
 const std::uint32_t LEAF_NODE_SPACE_FOR_CELLS = page_size - LEAF_NODE_HEADER_SIZE;
 constexpr std::uint32_t LEAF_NODE_MAX_CELLS =
-    LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
+    LEAF_NODE_SPACE_FOR_CELLS / leaf_node_pair_size;
 
 
-constexpr int rows_per_page = (page_size - LEAF_NODE_HEADER_SIZE) / (LEAF_NODE_CELL_SIZE);
+constexpr int rows_per_page = (page_size - LEAF_NODE_HEADER_SIZE) / (leaf_node_pair_size);
 
 } // namespace fmisql
 

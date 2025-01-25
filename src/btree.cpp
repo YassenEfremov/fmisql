@@ -2,6 +2,7 @@
 
 #include "data_types.hpp"
 #include "pager.hpp"
+#include "schema.hpp"
 
 #include <cstdint>
 
@@ -18,7 +19,7 @@ std::uint32_t *LeafNode::get_pair_count() {
 }
 
 void *LeafNode::get_pair(int pair_index) {
-	return (std::uint8_t *)this->data + LEAF_NODE_HEADER_SIZE + pair_index * LEAF_NODE_CELL_SIZE;
+	return (std::uint8_t *)this->data + LEAF_NODE_HEADER_SIZE + pair_index * leaf_node_pair_size;
 }
 
 std::uint32_t *LeafNode::get_pair_key(int pair_index) {
@@ -29,24 +30,24 @@ void *LeafNode::get_pair_value(int pair_index) {
 	return (std::uint8_t *)this->get_pair(pair_index) + LEAF_NODE_KEY_SIZE;
 }
 
-void LeafNode::insert_at(int pos, std::uint32_t key, sql_types::ExampleRow value) {
+void LeafNode::insert_at(int pos, std::uint32_t key, SchemaRow value) {
 
 	std::uint32_t pair_count = *this->get_pair_count();
 	if (pos < pair_count) {
 		for (int j = pair_count; j > pos; j--) {
 			std::memcpy(this->get_pair(j),
 			            this->get_pair(j - 1),
-			            LEAF_NODE_CELL_SIZE);
+			            leaf_node_pair_size);
 		}
 	}
 
-	*this->get_pair_key(pos) = value.ID;
+	*this->get_pair_key(pos) = key;
 	value.serialize(this->get_pair_value(pos));
 
 	*this->get_pair_count() += 1;
 }
 
-void LeafNode::insert(std::uint32_t key, sql_types::ExampleRow value) {
+void LeafNode::insert(std::uint32_t key, SchemaRow value) {
 
 	std::uint32_t pair_count = *this->get_pair_count();
 

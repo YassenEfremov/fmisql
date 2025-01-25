@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-#include "../classes.hpp"
+// #include "../classes.hpp"
 #include "../data_types.hpp"
 #include "../statement.hpp"
 
@@ -70,7 +70,7 @@ std::vector<Column> parse_create_columns(std::string_view columns_str) {
 			);
 		}
 
-		table_columns.push_back(Column(column_name, column_type));
+		table_columns.push_back(Column{column_name, column_type});
 	}
 
 	return table_columns;
@@ -232,7 +232,7 @@ Statement parse_line(std::string_view line) {
 			return Statement(Statement::Type::INVALID);
 		}
 
-		return Statement(Statement::Type::CREATE_TABLE, table_name);
+		return Statement(Statement::Type::CREATE_TABLE, table_name, table_columns);
 
 	} else if (command == "DropTable") {
 		std::string_view table_name;
@@ -309,7 +309,7 @@ Statement parse_line(std::string_view line) {
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			if (pos == std::string_view::npos)
-				return Statement(Statement::Type::SELECT, table_name, column_names);
+				return Statement(Statement::Type::SELECT, table_name, {}, column_names);
 
 			/**
 			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
@@ -336,7 +336,7 @@ Statement parse_line(std::string_view line) {
 			return Statement(Statement::Type::INVALID);
 		}
 
-		return Statement(Statement::Type::SELECT, table_name, column_names);
+		return Statement(Statement::Type::SELECT, table_name, {}, column_names);
 
 	} else if (command == "Remove") {
 		
@@ -382,7 +382,7 @@ Statement parse_line(std::string_view line) {
 			return Statement(Statement::Type::INVALID);
 		}
 
-		return Statement(Statement::Type::INSERT, table_name, {}, rows);
+		return Statement(Statement::Type::INSERT, table_name, {}, {}, rows);
 
 	} else {
 		std::cout << command << ": unknown command\n";

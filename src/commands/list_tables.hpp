@@ -1,11 +1,12 @@
 #ifndef LIST_TABLES_HPP
 #define LIST_TABLES_HPP
 
-#include <string>
-#include <unordered_set>
 
+namespace fmisql {
 
-std::unordered_set<std::string> list_tables();
+void list_tables();
+
+} // namespace fmisql
 
 
 #endif // LIST_TABLES_HPP

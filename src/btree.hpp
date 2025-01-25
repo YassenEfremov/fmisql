@@ -4,6 +4,7 @@
 #include "constants.hpp"
 #include "data_types.hpp"
 #include "pager.hpp"
+#include "schema.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -53,14 +54,14 @@ public:
      * @brief Inserts the given key-value pair at the given position, shifting
      *        all pairs after it to the right
      */
-    void insert_at(int pos, std::uint32_t key, sql_types::ExampleRow value);
+    void insert_at(int pos, std::uint32_t key, SchemaRow value);
 
     /**
      * @brief Uses binary search to find the best place to insert the given
      *        key-value pair. Throws an exception if the pair is already in the
      *        tree.
      */
-    void insert(std::uint32_t key, sql_types::ExampleRow value);
+    void insert(std::uint32_t key, SchemaRow value);
 
 private:
     void *data;

@@ -15,8 +15,8 @@ add_executable(fmisql
 	src/cli/parser.cpp
 	src/commands/create_table.cpp
 	# src/commands/drop_table.cpp
-	# src/commands/list_tables.cpp
-	# src/commands/table_info.cpp
+	src/commands/list_tables.cpp
+	src/commands/table_info.cpp
 	src/commands/insert.cpp
 	src/commands/select.cpp
 	src/btree.cpp

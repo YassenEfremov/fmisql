@@ -2,6 +2,7 @@
 #define CLASSES_HPP
 
 #include "data_types.hpp"
+#include "statement.hpp"
 
 #include <vector>
 #include <string>
@@ -10,15 +11,15 @@
 
 namespace fmisql {
 
-class Column {
-public:
-	Column(std::string_view name, sql_types::Id type)
-		: name(name), type(type) {}
+// class Column {
+// public:
+// 	Column(std::string_view name, sql_types::Id type)
+// 		: name(name), type(type) {}
 
-	std::string_view name;
-	sql_types::Id type;
-private:
-};
+// 	std::string_view name;
+// 	sql_types::Id type;
+// private:
+// };
 
 
 
