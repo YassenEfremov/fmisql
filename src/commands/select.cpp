@@ -1,6 +1,7 @@
 #include "select.hpp"
 
 #include "../btree.hpp"
+#include "../data_types.hpp"
 #include "../pager.hpp"
 
 #include <cstring>
@@ -26,7 +27,7 @@ static bool columns_contain(const std::vector<std::string_view> &columns,
 void select(const std::vector<std::string_view> &columns,
             std::string_view table_name) {
 
-	LeafNode node(Pager::get_page(0));
+	LeafNode node;
 
 	std::cout << '|';
 	for (std::string_view column : columns) {
@@ -35,8 +36,8 @@ void select(const std::vector<std::string_view> &columns,
 	std::cout << '\n';
 	std::cout << "------------------\n";
 
-	ExampleRow row;
-	for (int i = 0; i < *node.get_cell_count(); i++) {
+	sql_types::ExampleRow row;
+	for (int i = 0; i < *node.get_pair_count(); i++) {
 		row.deserialize(Pager::row_slot(i));
 
 		std::cout << '|';
@@ -52,7 +53,7 @@ void select(const std::vector<std::string_view> &columns,
 		std::cout << '\n';
 	}
 
-	std::cout << "Total " << *node.get_cell_count() << " row/s selected\n";
+	std::cout << "Total " << *node.get_pair_count() << " row/s selected\n";
 }
 
 } // namespace fmisql

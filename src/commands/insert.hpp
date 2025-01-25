@@ -1,7 +1,7 @@
 #ifndef INSERT_HPP
 #define INSERT_HPP
 
-#include "../pager.hpp"
+#include "../data_types.hpp"
 
 #include <string_view>
 #include <vector>
@@ -9,7 +9,7 @@
 
 namespace fmisql {
 
-void insert(std::string_view table_name, const std::vector<ExampleRow> rows);
+void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow> rows);
 
 } // namespace fmisql
 

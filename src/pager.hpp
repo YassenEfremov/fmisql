@@ -1,7 +1,8 @@
 #ifndef PAGER_HPP
 #define PAGER_HPP
 
-#include "btree.hpp"
+#include "constants.hpp"
+#include "data_types.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -14,29 +15,6 @@
 namespace fs = std::filesystem;
 
 namespace fmisql {
-
-constexpr const char db_filename[] = "fmisql.db";
-
-
-// temporary row structure
-struct ExampleRow {
-    std::uint32_t ID;
-    char Name[256];
-    std::uint32_t Value;
-
-	void serialize(void *dst) const {
-		std::memcpy((std::uint8_t *)dst, &this->ID, sizeof ID);
-		std::memcpy((std::uint8_t *)dst + sizeof ID, &this->Name, sizeof Name);
-		std::memcpy((std::uint8_t *)dst + sizeof ID + sizeof Name, &this->Value, sizeof Value);
-	}
-
-	void deserialize(void *src) {
-		std::memcpy(&this->ID, (std::uint8_t *)src, sizeof ID);
-		std::memcpy(&this->Name, (std::uint8_t *)src + sizeof ID, sizeof Name);
-		std::memcpy(&this->Value, (std::uint8_t *)src + sizeof ID + sizeof Name, sizeof Value);
-	}
-};
-
 
 
 class Pager {

@@ -1,7 +1,7 @@
 #ifndef STATEMENT_HPP
 #define STATEMENT_HPP
 
-#include "pager.hpp"
+#include "data_types.hpp"
 
 #include <string_view>
 #include <vector>
@@ -26,7 +26,7 @@ struct Statement {
         Type type,
         std::string_view table_name = "",
         std::vector<std::string_view> select_columns = {},
-        std::vector<ExampleRow> insert_rows = {}
+        std::vector<sql_types::ExampleRow> insert_rows = {}
     );
 
     Type type;
@@ -35,7 +35,7 @@ struct Statement {
     // columns for CreateTable
     std::vector<std::string_view> select_columns;
     // Remove?
-    std::vector<ExampleRow> insert_rows;
+    std::vector<sql_types::ExampleRow> insert_rows;
 };
 
 } // namespace fmisql

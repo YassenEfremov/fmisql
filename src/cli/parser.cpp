@@ -2,7 +2,6 @@
 
 #include "../classes.hpp"
 #include "../data_types.hpp"
-#include "../pager.hpp"
 #include "../statement.hpp"
 
 #include <cstddef>
@@ -77,7 +76,7 @@ std::vector<Column> parse_create_columns(std::string_view columns_str) {
 	return table_columns;
 }
 
-std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
+std::vector<sql_types::ExampleRow> parse_inserts(std::string_view inserts_str) {
 
 	/**
 	 *  {(<value>, ...), ...}
@@ -90,7 +89,7 @@ std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 	}
 	pos++;
 
-	std::vector<ExampleRow> table_inserts;
+	std::vector<sql_types::ExampleRow> table_inserts;
 
 	while (inserts_str[pos] != '}') {
 		pos = inserts_str.find_first_of("(", pos);
@@ -104,7 +103,7 @@ std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 		}
 		pos++;
 
-		ExampleRow row;
+		sql_types::ExampleRow row;
 
 		while (inserts_str[pos] != ')') {
 			/**
@@ -347,7 +346,7 @@ Statement parse_line(std::string_view line) {
 
 	} else if (command == "Insert") {
 		std::string_view table_name;
-		std::vector<ExampleRow> rows;
+		std::vector<sql_types::ExampleRow> rows;
 		try {
 			/**
 			 * Insert INTO <table> {(<value>, ...), ...}

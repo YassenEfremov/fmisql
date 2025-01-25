@@ -1,26 +1,71 @@
 #include "btree.hpp"
 
+#include "data_types.hpp"
+#include "pager.hpp"
+
 #include <cstdint>
+
+#include <stdexcept>
+#include <iostream>
 
 
 namespace fmisql {
 
 LeafNode::LeafNode(void *data) : data(data) {}
 
-std::uint32_t *LeafNode::get_cell_count() {
+std::uint32_t *LeafNode::get_pair_count() {
 	return (std::uint32_t *)((std::uint8_t *)this->data + LEAF_NODE_NUM_CELLS_OFFSET);
 }
 
-void *LeafNode::get_cell(int cell_number) {
-	return (std::uint8_t *)this->data + LEAF_NODE_HEADER_SIZE + cell_number * LEAF_NODE_CELL_SIZE;
+void *LeafNode::get_pair(int pair_index) {
+	return (std::uint8_t *)this->data + LEAF_NODE_HEADER_SIZE + pair_index * LEAF_NODE_CELL_SIZE;
 }
 
-std::uint32_t *LeafNode::get_cell_key(int cell_number) {
-	return (std::uint32_t *)this->get_cell(cell_number);
+std::uint32_t *LeafNode::get_pair_key(int pair_index) {
+	return (std::uint32_t *)this->get_pair(pair_index);
 }
 
-void *LeafNode::get_cell_value(int cell_number) {
-	return (std::uint8_t *)this->get_cell(cell_number) + LEAF_NODE_KEY_SIZE;
+void *LeafNode::get_pair_value(int pair_index) {
+	return (std::uint8_t *)this->get_pair(pair_index) + LEAF_NODE_KEY_SIZE;
+}
+
+void LeafNode::insert_at(int pos, std::uint32_t key, sql_types::ExampleRow value) {
+
+	std::uint32_t pair_count = *this->get_pair_count();
+	if (pos < pair_count) {
+		for (int j = pair_count; j > pos; j--) {
+			std::memcpy(this->get_pair(j),
+			            this->get_pair(j - 1),
+			            LEAF_NODE_CELL_SIZE);
+		}
+	}
+
+	*this->get_pair_key(pos) = value.ID;
+	value.serialize(this->get_pair_value(pos));
+
+	*this->get_pair_count() += 1;
+}
+
+void LeafNode::insert(std::uint32_t key, sql_types::ExampleRow value) {
+
+	std::uint32_t pair_count = *this->get_pair_count();
+
+	std::uint32_t left_pos = 0;
+	std::uint32_t right_pos = *this->get_pair_count();
+	std::uint32_t mid_pos = (left_pos + right_pos) / 2;
+
+	while (left_pos != right_pos) {
+		if (key < *this->get_pair_key(mid_pos)) {
+			right_pos = mid_pos;
+		} else if (key > *this->get_pair_key(mid_pos)) {
+			left_pos = mid_pos + 1;
+		} else {
+			throw std::runtime_error("duplicate key");
+		}
+		mid_pos = (left_pos + right_pos) / 2;
+	}
+
+	this->insert_at(mid_pos, key, value);
 }
 
 } // namespace fmisql
