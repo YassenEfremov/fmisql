@@ -25,6 +25,7 @@ struct Statement {
     Statement(
         Type type,
         std::string_view table_name = "",
+        std::vector<std::string_view> select_columns = {},
         std::vector<ExampleRow> insert_rows = {}
     );
 
@@ -32,7 +33,7 @@ struct Statement {
 
     std::string_view table_name;
     // columns for CreateTable
-    // columns for Select
+    std::vector<std::string_view> select_columns;
     // Remove?
     std::vector<ExampleRow> insert_rows;
 };

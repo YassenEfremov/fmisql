@@ -17,7 +17,7 @@
 
 namespace fmisql {
 
-std::vector<Column> parse_columns(std::string_view columns_str) {
+std::vector<Column> parse_create_columns(std::string_view columns_str) {
 
 	/**
 	 *  (<column name>:<type>, ...)
@@ -160,6 +160,34 @@ std::vector<ExampleRow> parse_inserts(std::string_view inserts_str) {
 	return table_inserts;
 }
 
+std::vector<std::string_view> parse_select_columns(std::string_view columns_str) {
+
+	if (columns_str == "*") {
+		// an empty vector means "all columns", because we can't know
+		// what columns the table has without checking the schema/pager
+		return {};
+	}
+
+	std::vector<std::string_view> columns;
+
+	std::size_t pos = 0;
+	while (pos != std::string_view::npos) {
+
+		/**
+		 *  <column>,...
+		 *  |^^^^^^^^
+		 * pos + next_size
+		 */
+		std::size_t next_size = columns_str.find_first_of(",", pos) - pos;
+		// std::cout << inserts_str.substr(pos, next_size) << '\n';
+		columns.push_back(columns_str.substr(pos, next_size));
+		pos = pos + next_size;
+		pos = columns_str.find_first_not_of(",", pos);
+	}
+
+	return columns;
+}
+
 Statement parse_line(std::string_view line) {
 
 	// TODO: error handling
@@ -195,7 +223,7 @@ Statement parse_line(std::string_view line) {
 			 *                          |^^^^^^^^^^^^^^^^^^^^^^^^^^^
 			 *                         pos + next_size
 			 */
-			table_columns = parse_columns(line.substr(pos));
+			table_columns = parse_create_columns(line.substr(pos));
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
@@ -246,6 +274,7 @@ Statement parse_line(std::string_view line) {
 		return Statement(Statement::Type::TABLE_INFO, table_name);
 
 	} else if (command == "Select") {
+		std::vector<std::string_view> column_names;
 		std::string_view table_name;
 		try {
 			/**
@@ -254,8 +283,9 @@ Statement parse_line(std::string_view line) {
 			 *       pos + next_size
 			 */
 			next_size = line.find_first_of(" ", pos) - pos;
-			std::string_view column_names = line.substr(pos, next_size);
+			std::string_view column_names_str = line.substr(pos, next_size);
 			pos = line.find_first_not_of(" ", pos + next_size);
+			column_names = parse_select_columns(column_names_str);
 
 			/**
 			 * Select <columns> FROM <table> WHERE <conditions> ORDER BY <column>
@@ -279,34 +309,35 @@ Statement parse_line(std::string_view line) {
 			table_name = line.substr(pos, next_size);
 			pos = line.find_first_not_of(" ", pos + next_size);
 
-			if (pos != std::string_view::npos) {
-				/**
-				 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
-				 *                               |^^^^^
-				 *                              pos + next_size
-				 */
-				next_size = line.find_first_of(" ", pos) - pos;
-				std::string_view kw_where = line.substr(pos, next_size);
-				if (kw_from != "WHERE") {
-					std::cout << "expected keyword WHERE\n";
-					return Statement(Statement::Type::INVALID);
-				}
-				pos = line.find_first_not_of(" ", pos + next_size);
+			if (pos == std::string_view::npos)
+				return Statement(Statement::Type::SELECT, table_name, column_names);
 
-				/**
-				 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
-				 *                                     |^^^^^^
-				 *                                    pos + next_size
-				 */
-				// conditions = parse_conditions(line.substr(pos));
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 *                               |^^^^^
+			 *                              pos + next_size
+			 */
+			next_size = line.find_first_of(" ", pos) - pos;
+			std::string_view kw_where = line.substr(pos, next_size);
+			if (kw_from != "WHERE") {
+				std::cout << "expected keyword WHERE\n";
+				return Statement(Statement::Type::INVALID);
 			}
+			pos = line.find_first_not_of(" ", pos + next_size);
+
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 *                                     |^^^^^^
+			 *                                    pos + next_size
+			 */
+			// conditions = parse_conditions(line.substr(pos));
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
 			return Statement(Statement::Type::INVALID);
 		}
 
-		return Statement(Statement::Type::SELECT, table_name);
+		return Statement(Statement::Type::SELECT, table_name, column_names);
 
 	} else if (command == "Remove") {
 		
@@ -352,7 +383,7 @@ Statement parse_line(std::string_view line) {
 			return Statement(Statement::Type::INVALID);
 		}
 
-		return Statement(Statement::Type::INSERT, table_name, rows);
+		return Statement(Statement::Type::INSERT, table_name, {}, rows);
 
 	} else {
 		std::cout << command << ": unknown command\n";

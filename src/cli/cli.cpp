@@ -62,7 +62,7 @@ void cli() {
 				break;
 
 			case Statement::Type::SELECT:
-				select(statement.table_name);
+				select(statement.select_columns, statement.table_name);
 				break;
 
 			case Statement::Type::REMOVE:
