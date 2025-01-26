@@ -6,6 +6,7 @@
 
 #include <cstring>
 
+#include <iostream>
 #include <string_view>
 #include <stdexcept>
 #include <vector>
@@ -19,22 +20,22 @@ namespace fmisql {
 
 void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow> rows) {
 
-	LeafNode node;
-	std::uint32_t pair_count = *node.get_pair_count();
+	try {
+		LeafNode node(LeafNode::number_of_table(table_name));
+		std::cout << "debug: table value size: " << *node.get_value_size() << '\n';
+		std::uint32_t pair_count = *node.get_pair_count();
 
-	std::cout << "starting from: " << pair_count << '\n';
-	for (int i = 0; i < rows.size(); i++) {
+		std::cout << "debug: starting from: " << pair_count << '\n';
+		for (int i = 0; i < rows.size(); i++) {
 
-		if (pair_count >= LEAF_NODE_MAX_CELLS) {
-			// TODO
-			throw std::logic_error("splitting not implemented yet");
+			// std::cout << "should insert row with id: " << rows[i].ID << '\n';
+			std::uint8_t buf[example_row_size];
+			rows[i].serialize(buf);
+			node.insert(rows[i].ID, buf);
 		}
 
-		try {
-			// node.insert(rows[i].ID, rows[i]);
-		} catch (const std::runtime_error &e) {
-			std::cout << "error: " << e.what() << '\n';
-		}
+	} catch (const std::runtime_error &e) {
+		std::cout << e.what() << '\n';
 	}
 }
 

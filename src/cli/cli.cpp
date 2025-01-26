@@ -52,7 +52,7 @@ void cli() {
 				break;
 
 			case Statement::Type::SELECT:
-				// select(statement.select_columns, statement.table_name);
+				select(statement.select_columns, statement.table_name);
 				break;
 
 			case Statement::Type::REMOVE:
@@ -60,7 +60,7 @@ void cli() {
 				break;
 
 			case Statement::Type::INSERT:
-				// insert(statement.table_name, statement.insert_rows);
+				insert(statement.table_name, statement.insert_rows);
 				break;
 
 			default:

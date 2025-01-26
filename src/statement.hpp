@@ -9,7 +9,7 @@
 
 namespace fmisql {
 
-struct Column { std::string_view name; sql_types::Id type; };
+struct Column { std::string_view name; sql_types::Id type_id; };
 
 struct Statement {
 

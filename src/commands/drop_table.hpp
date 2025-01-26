@@ -1,10 +1,10 @@
 #ifndef DROP_TABLE_HPP
 #define DROP_TABLE_HPP
 
-#include <string>
+#include <string_view>
 
 
-void drop_table(const std::string &name);
+void drop_table(std::string_view name);
 
 
 #endif // DROP_TABLE_HPP

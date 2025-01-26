@@ -16,6 +16,10 @@ constexpr int schema_row_size = sizeof(sql_types::String) +
                                 sizeof(sql_types::Int) +
                                 sizeof(sql_types::String);
 
+constexpr int example_row_size = sizeof(sql_types::Int) +
+                                 sizeof(sql_types::String) +
+                                 sizeof(sql_types::Int);
+
 /*
  * Common Node Header Layout
  */
@@ -33,24 +37,28 @@ const std::uint8_t COMMON_NODE_HEADER_SIZE =
  */
 const std::uint32_t LEAF_NODE_NUM_CELLS_SIZE = sizeof(std::uint32_t);
 constexpr std::uint32_t LEAF_NODE_NUM_CELLS_OFFSET = COMMON_NODE_HEADER_SIZE;
+constexpr std::uint32_t leaf_node_value_size_size = sizeof(std::uint32_t);
+constexpr std::uint32_t leaf_node_value_size_offset = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
 constexpr std::uint32_t LEAF_NODE_HEADER_SIZE =
-    COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
+    COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE + leaf_node_value_size_size;
 
 /*
  * Leaf Node Body Layout
  */
 constexpr std::uint32_t LEAF_NODE_KEY_SIZE = sizeof(std::uint32_t);
 const std::uint32_t LEAF_NODE_KEY_OFFSET = 0;
-const std::uint32_t LEAF_NODE_VALUE_SIZE = schema_row_size;
+// not constant, depends on the page
+// const std::uint32_t LEAF_NODE_VALUE_SIZE;
 const std::uint32_t LEAF_NODE_VALUE_OFFSET =
     LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
-constexpr std::uint32_t leaf_node_pair_size = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
+// not constant, depends on the page
+// constexpr std::uint32_t leaf_node_pair_size = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
 const std::uint32_t LEAF_NODE_SPACE_FOR_CELLS = page_size - LEAF_NODE_HEADER_SIZE;
-constexpr std::uint32_t LEAF_NODE_MAX_CELLS =
-    LEAF_NODE_SPACE_FOR_CELLS / leaf_node_pair_size;
+// not constant, depends on the page
+// constexpr std::uint32_t LEAF_NODE_MAX_CELLS = LEAF_NODE_SPACE_FOR_CELLS / leaf_node_pair_size;
 
-
-constexpr int rows_per_page = (page_size - LEAF_NODE_HEADER_SIZE) / (leaf_node_pair_size);
+// not constant, depends on the page
+// constexpr int rows_per_page = (page_size - LEAF_NODE_HEADER_SIZE) / (leaf_node_pair_size);
 
 } // namespace fmisql
 

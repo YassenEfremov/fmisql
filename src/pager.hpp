@@ -48,20 +48,6 @@ public:
 		}
 	}
 
-	static void *row_slot(int row_number) {
-		int page_number = row_number / rows_per_page;
-		// void *page = pages[page_number];
-		// if (page == nullptr) {
-		// 	page = pages[page_number] = new std::uint8_t[page_size];
-		// }
-		void *page = get_page(page_number);
-		// int row_offset = (row_number % rows_per_page) * row_size;
-		int row_offset = LEAF_NODE_HEADER_SIZE
-			+ row_number * (LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE)
-			+ LEAF_NODE_KEY_SIZE;
-		return (std::uint8_t *)page + row_offset;
-	}
-
 	static void *get_page(int page_number) {
 		if (page_number > table_max_pages) {
 			throw std::runtime_error("Page number out of bounds\n");
@@ -77,7 +63,7 @@ public:
 			// }
 
 			if (page_number < page_count) {
-				std::cout << "seeking to " << page_number * page_size << '\n';
+				std::cout << "debug: seeking to " << page_number * page_size << '\n';
 				db_file.seekg(page_number * page_size);
 				db_file.read((char *)new_page, page_size);
 				if (db_file.fail()) std::cerr << "fail?\n";
