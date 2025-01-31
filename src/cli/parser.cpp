@@ -1,6 +1,5 @@
 #include "parser.hpp"
 
-// #include "../classes.hpp"
 #include "../data_types.hpp"
 #include "../statement.hpp"
 
@@ -16,16 +15,21 @@
 
 namespace fmisql {
 
+static void trim(std::string_view &str) {
+	str.remove_prefix(std::min(str.find_first_not_of(" "), str.size()));
+	str.remove_suffix(str.size() - std::min(str.find_last_not_of(" ") + 1, str.size()));
+}
+
 std::vector<Column> parse_create_columns(std::string_view columns_str) {
 
 	/**
-	 *  (<column name>:<type>, ...)
+	 *  (<name>:<type>, ...)
 	 *  |
 	 * pos
 	 */
 	std::size_t pos = 0;
 	if (columns_str[pos] != '(') {
-		throw std::runtime_error("expected '('\n");
+		throw std::runtime_error("expected '('");
 	}
 	pos++;
 
@@ -33,29 +37,49 @@ std::vector<Column> parse_create_columns(std::string_view columns_str) {
 
 	while (columns_str[pos] != ')') {
 		/**
-		 *      (<column name>:<type>, ...)
-		 *      ^^
+		 *      (<name>:<type>, ...)
+		 *      \/
 		 * spaces allowed
 		 */
 		pos = columns_str.find_first_not_of(" ,", pos);
+		if (pos == std::string_view::npos || columns_str[pos] == ')') {
+			throw std::runtime_error("expected column names and types");
+		}
 
 		/**
 		 * (<column name>:<type>, ...)
-		 *  |^^^^^^^^^^^^^
+		 *  |^^^^^^^^^^^\ /
+		 *  |      spaces allowed
+		 *  |
 		 * pos + next_size
 		 */
-		std::size_t next_size = columns_str.find_first_of(":", pos) - pos;
+		std::size_t next_size = columns_str.find_first_of(":,", pos) - pos;
+		if (columns_str[pos + next_size] != ':') {
+			throw std::runtime_error("expected ':'");
+		}
 		std::string_view column_name = columns_str.substr(pos, next_size);
-		pos = pos + next_size + 1;
+		trim(column_name);
+		if (column_name.find(" ") != std::string_view::npos) {
+			throw std::runtime_error("column name cannot contain spaces");
+		}
+		pos = columns_str.find_first_not_of(": ", pos + next_size);
+		if (columns_str[pos] == ',') {
+			throw std::runtime_error("expected column type");
+		}
 
 		/**
 		 * (<column name>:<type>, ...)
-		 *                |^^^^^^
+		 *                |^^^^\/
+		 *                | spaces allowed
+		 *                |
 		 *               pos + next_size
 		 */
-		next_size = columns_str.find_first_of(",)", pos) - pos;
+		next_size = columns_str.find_first_of(" ,)", pos) - pos;
 		std::string_view column_type_str = columns_str.substr(pos, next_size);
-		pos = pos + next_size;
+		pos = columns_str.find_first_of(",)", pos);
+		if (pos == std::string_view::npos || (columns_str[pos] != ',' && columns_str[pos] != ')')) {
+			throw std::runtime_error("expected ',' or ')'");
+		}
 
 		sql_types::Id column_type;
 		if (column_type_str == "Int") {
@@ -191,8 +215,7 @@ Statement parse_line(std::string_view line) {
 
 	// TODO: error handling
 
-	line.remove_prefix(std::min(line.find_first_not_of(" "), line.size()));
-	line.remove_suffix(line.size() - std::min(line.find_last_not_of(" ") + 1, line.size()));
+	trim(line);
 
 	/**
 	 *    <command>
@@ -209,8 +232,8 @@ Statement parse_line(std::string_view line) {
 		std::vector<Column> table_columns;
 		try {
 			/**
-			 * CreateTable <table name> (<column name>:<type>, ...)
-			 *             |^^^^^^^^^^^^
+			 * CreateTable <name> (<name>:<type>, ...)
+			 *             |^^^^^^
 			 *            pos + next_size
 			 */
 			next_size = line.find_first_of(" ", pos) - pos;
@@ -218,9 +241,9 @@ Statement parse_line(std::string_view line) {
 			pos = line.find_first_not_of(" ", pos + next_size);
 
 			/**
-			 * CreateTable <table name> (<column name>:<type>, ...)
-			 *                          |^^^^^^^^^^^^^^^^^^^^^^^^^^^
-			 *                         pos + next_size
+			 * CreateTable <name> (<name>:<type>, ...)
+			 *                    |^^^^^^^^^^^^^^^^^^^^
+			 *                   pos + next_size
 			 */
 			table_columns = parse_create_columns(line.substr(pos));
 
@@ -228,7 +251,7 @@ Statement parse_line(std::string_view line) {
 			std::cout << "not enough arguments given\n";
 			return Statement(Statement::Type::INVALID);
 		} catch (const std::runtime_error &e) {
-			std::cout << e.what();
+			std::cout << e.what() << '\n';
 			return Statement(Statement::Type::INVALID);
 		}
 
