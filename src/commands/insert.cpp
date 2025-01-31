@@ -15,17 +15,20 @@
 namespace fmisql {
 
 // Example inset statements:
-// Insert INTO Sample {(1, "Test message", 120)}
-// Insert INTO Sample {(50, "asd", 12), (60, "asd", 12), (51, "asd", 12), (53, "asd", 12), (52, "asd", 12)}
+// Insert INTO Sample {(15, "Test message", 120)}
+// Insert INTO Sample {(16, "farlands", 99)}
+// Insert INTO Sample {(1, "asd", 12), (2, "asd", 12), (3, "asd", 12), (4, "asd", 12), (5, "ddd", 5)}
+// Insert INTO Sample {(6, "asd", 12), (7, "asd", 12), (8, "asd", 12), (9, "asd", 12), (10, "ddd", 5)}
+// Insert INTO Sample {(11, "asd", 12), (12, "asd", 12), (13, "asd", 12), (14, "asd", 12), (15, "ddd", 5)}
 
 void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow> rows) {
 
 	try {
-		LeafNode node(LeafNode::number_of_table(table_name));
-		std::cout << "debug: table value size: " << *node.get_value_size() << '\n';
-		std::uint32_t pair_count = *node.get_pair_count();
+		Node node(Node::number_of_table(table_name));
+		// std::cout << "debug: table value size: " << *node.value_size() << '\n';
+		std::uint32_t pair_count = *node.pair_count();
 
-		std::cout << "debug: starting from: " << pair_count << '\n';
+		// std::cout << "debug: starting from: " << pair_count << '\n';
 		for (int i = 0; i < rows.size(); i++) {
 
 			// std::cout << "should insert row with id: " << rows[i].ID << '\n';

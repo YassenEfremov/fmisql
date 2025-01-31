@@ -29,5 +29,5 @@ add_executable(fmisql
 if (MSVC)
 	# compliant by default?
 else()
-	target_compile_options(fmisql PRIVATE -pedantic-errors)
+	target_compile_options(fmisql PRIVATE -pedantic-errors -g)
 endif()

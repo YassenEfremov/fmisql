@@ -54,19 +54,14 @@ public:
 		}
 
 		if (pages[page_number] == nullptr) {
-			// miss
+			// cache miss
 			void *new_page = new std::uint8_t[page_size];
 
-			// if (file_size % page_size) {
-			// 	// partial page
-			// 	page_count++;
-			// }
-
 			if (page_number < page_count) {
-				std::cout << "debug: seeking to " << page_number * page_size << '\n';
+				// std::cout << "debug: seeking to " << page_number * page_size << '\n';
 				db_file.seekg(page_number * page_size);
 				db_file.read((char *)new_page, page_size);
-				if (db_file.fail()) std::cerr << "fail?\n";
+				if (db_file.fail()) std::cerr << "error while reading database file\n";
 			}
 
 			pages[page_number] = new_page;
@@ -77,6 +72,10 @@ public:
 		}
 
 		return pages[page_number];
+	}
+
+	static int get_unused_page_number() {
+		return Pager::page_count;
 	}
 
 	static void flush(int page_number) {

@@ -35,7 +35,11 @@ void create_table(std::string_view name, std::vector<Column> columns,
 	// 	}
 	// }
 
-	LeafNode node(0, schema_row_size);
+	// for now this is always the case
+	Node node(0, schema_row_size);
+	node.set_type(Node::Type::LEAF);
+	*node.is_root() = true;
+	*node.next_leaf() = 0;
 
 	SchemaRow row(name, Pager::page_count, original_sql);
 
@@ -52,7 +56,10 @@ void create_table(std::string_view name, std::vector<Column> columns,
 			break;
 		}
 	}
-	LeafNode new_node(Pager::page_count, row_size);
+	Node new_node(Pager::page_count, row_size);
+	new_node.set_type(Node::Type::LEAF);
+	*new_node.is_root() = true;
+	*new_node.next_leaf() = 0;
 
 	try {
 		std::uint8_t buf[schema_row_size];

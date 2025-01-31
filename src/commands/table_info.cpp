@@ -6,6 +6,8 @@
 #include "../cli/parser.hpp"
 #include "../statement.hpp"
 
+#include <cstdint>
+
 #include <iostream>
 #include <string_view>
 
@@ -14,11 +16,11 @@ namespace fmisql {
 
 void table_info(std::string_view name) {
 
-	LeafNode node(0, schema_row_size);
+	Node node(0, schema_row_size);
 
 	SchemaRow row("", 0, "");
-	for (int i = 0; i < *node.get_pair_count(); i++) {
-		row.deserialize(node.get_pair_value(i));
+	for (int i = 0; i < *node.pair_count(); i++) {
+		row.deserialize(node.pair_value(i));
 
 		if (row.table_name == name) {
 			std::cout << "Table " << name << " : ";
@@ -42,7 +44,11 @@ void table_info(std::string_view name) {
 			}
 			std::cout << ")\n";
 
-			std::cout << "Total " << '?' << " rows (" << '?' << " KB data) in the table\n";
+			Node table_node(row.page);
+			std::uint32_t row_count = *table_node.pair_count();
+			std::cout << "Total " << row_count << " rows (" <<
+				static_cast<double>(row_count * example_row_size)/1000 <<
+				" KB data) in the table\n";
 
 			return;
 		}

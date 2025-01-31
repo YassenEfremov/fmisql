@@ -11,7 +11,7 @@ namespace fmisql {
 constexpr const char db_filename[] = "fmisql.db";
 
 constexpr int page_size = 4096;
-constexpr int table_max_pages = 100;
+constexpr int table_max_pages = 100; // temporary
 constexpr int schema_row_size = sizeof(sql_types::String) +
                                 sizeof(sql_types::Int) +
                                 sizeof(sql_types::String);
@@ -20,45 +20,59 @@ constexpr int example_row_size = sizeof(sql_types::Int) +
                                  sizeof(sql_types::String) +
                                  sizeof(sql_types::Int);
 
-/*
- * Common Node Header Layout
- */
-const std::uint32_t NODE_TYPE_SIZE = sizeof(std::uint8_t);
-const std::uint32_t NODE_TYPE_OFFSET = 0;
-const std::uint32_t IS_ROOT_SIZE = sizeof(std::uint8_t);
-const std::uint32_t IS_ROOT_OFFSET = NODE_TYPE_SIZE;
-const std::uint32_t PARENT_POINTER_SIZE = sizeof(std::uint32_t);
-const std::uint32_t PARENT_POINTER_OFFSET = IS_ROOT_OFFSET + IS_ROOT_SIZE;
-const std::uint8_t COMMON_NODE_HEADER_SIZE =
-    NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
+// common node header layout
+constexpr std::uint32_t node_type_size = sizeof(std::uint8_t);
+constexpr std::uint32_t node_type_offset = 0;
+constexpr std::uint32_t is_root_size = sizeof(std::uint8_t);
+constexpr std::uint32_t is_root_offset = node_type_size;
+constexpr std::uint32_t parent_pointer_size = sizeof(std::uint32_t);
+constexpr std::uint32_t parent_pointer_offset = is_root_offset + is_root_size;
+constexpr std::uint8_t common_node_header_size =
+    node_type_size + is_root_size + parent_pointer_size;
 
-/*
- * Leaf Node Header Layout
- */
-const std::uint32_t LEAF_NODE_NUM_CELLS_SIZE = sizeof(std::uint32_t);
-constexpr std::uint32_t LEAF_NODE_NUM_CELLS_OFFSET = COMMON_NODE_HEADER_SIZE;
+// leaf node header layout
+constexpr std::uint32_t leaf_node_num_cells_size = sizeof(std::uint32_t);
+constexpr std::uint32_t leaf_node_num_cells_offset = common_node_header_size;
 constexpr std::uint32_t leaf_node_value_size_size = sizeof(std::uint32_t);
-constexpr std::uint32_t leaf_node_value_size_offset = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
-constexpr std::uint32_t LEAF_NODE_HEADER_SIZE =
-    COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE + leaf_node_value_size_size;
+constexpr std::uint32_t leaf_node_value_size_offset = common_node_header_size + leaf_node_num_cells_size;
+constexpr std::uint32_t leaf_node_next_leaf_size = sizeof(std::uint32_t);
+constexpr std::uint32_t leaf_node_next_leaf_offset = leaf_node_value_size_offset +
+                                                     leaf_node_value_size_size;
+constexpr std::uint32_t leaf_node_header_size = common_node_header_size +
+                                                leaf_node_num_cells_size +
+                                                leaf_node_value_size_size +
+                                                leaf_node_next_leaf_size;
 
-/*
- * Leaf Node Body Layout
- */
-constexpr std::uint32_t LEAF_NODE_KEY_SIZE = sizeof(std::uint32_t);
-const std::uint32_t LEAF_NODE_KEY_OFFSET = 0;
-// not constant, depends on the page
-// const std::uint32_t LEAF_NODE_VALUE_SIZE;
-const std::uint32_t LEAF_NODE_VALUE_OFFSET =
-    LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
-// not constant, depends on the page
-// constexpr std::uint32_t leaf_node_pair_size = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
-const std::uint32_t LEAF_NODE_SPACE_FOR_CELLS = page_size - LEAF_NODE_HEADER_SIZE;
-// not constant, depends on the page
-// constexpr std::uint32_t LEAF_NODE_MAX_CELLS = LEAF_NODE_SPACE_FOR_CELLS / leaf_node_pair_size;
+// leaf node body layout
+constexpr std::uint32_t leaf_node_key_size = sizeof(std::uint32_t);
+constexpr std::uint32_t leaf_node_key_offset = 0;
+// not constant, depends on the columns
+// const std::uint32_t leaf_node_value_size;
+constexpr std::uint32_t leaf_node_value_offset = leaf_node_key_offset + leaf_node_key_size;
+// not constant, depends on the columns
+// constexpr std::uint32_t leaf_node_pair_size = leaf_node_key_size + leaf_node_value_size;
+constexpr std::uint32_t leaf_node_space_for_cells = page_size - leaf_node_header_size;
+// not constant, depends on the columns
+// constexpr std::uint32_t leaf_node_max_cells = leaf_node_space_for_cells / leaf_node_pair_size;
 
-// not constant, depends on the page
-// constexpr int rows_per_page = (page_size - LEAF_NODE_HEADER_SIZE) / (leaf_node_pair_size);
+// not constant, depends on the columns
+// constexpr int rows_per_page = (page_size - leaf_node_header_size) / (leaf_node_pair_size);
+
+// internal node header layout
+constexpr std::uint32_t internal_node_num_keys_size = sizeof(std::uint32_t);
+constexpr std::uint32_t internal_node_num_keys_offset = common_node_header_size;
+constexpr std::uint32_t internal_node_right_child_size = sizeof(std::uint32_t);
+constexpr std::uint32_t internal_node_right_child_offset =
+    internal_node_num_keys_offset + internal_node_num_keys_size;
+constexpr std::uint32_t internal_node_header_size = common_node_header_size +
+                                           internal_node_num_keys_size +
+                                           internal_node_right_child_size;
+
+// internal node body layout
+constexpr std::uint32_t internal_node_key_size = sizeof(std::uint32_t);
+constexpr std::uint32_t internal_node_child_size = sizeof(std::uint32_t);
+constexpr std::uint32_t internal_node_cell_size =
+    internal_node_child_size + internal_node_key_size;
 
 } // namespace fmisql
 

@@ -27,7 +27,7 @@ void db_deinit() {
 
 		// TODO: don't write unchanged pages!
 
-		std::cout << "debug: writing page\n";
+		// std::cout << "debug: writing page\n";
 		Pager::flush(i);
 		delete[] (std::uint8_t *)Pager::pages[i];
 		Pager::pages[i] = nullptr;

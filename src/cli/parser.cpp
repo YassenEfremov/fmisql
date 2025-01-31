@@ -148,10 +148,10 @@ std::vector<sql_types::ExampleRow> parse_inserts(std::string_view inserts_str) {
 		}
 		pos++;
 
-		std::cout << "row:\n" <<
-			"  " << row.ID <<
-			"  " << row.Name <<
-			"  " << row.Value << '\n';
+		// std::cout << "debug: parsed row: " <<
+		// 	"  " << row.ID <<
+		// 	"  " << row.Name <<
+		// 	"  " << row.Value << '\n';
 		
 		table_inserts.push_back(row);
 	}

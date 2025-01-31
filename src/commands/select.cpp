@@ -2,10 +2,10 @@
 
 #include "../btree.hpp"
 #include "../data_types.hpp"
-#include "../pager.hpp"
 
 #include <cstring>
 
+#include <iostream>
 #include <string_view>
 #include <vector>
 
@@ -28,7 +28,10 @@ void select(const std::vector<std::string_view> &columns,
             std::string_view table_name) {
 
 	try {
-		LeafNode node(LeafNode::number_of_table(table_name));
+		Node node(Node::number_of_table(table_name));
+		int leaf_number = node.start_leaf();
+		// std::cout << "start leaf: " << leaf_number << '\n';
+		int rows_selected = 0;
 
 		std::cout << '|';
 		for (std::string_view column : columns) {
@@ -37,24 +40,29 @@ void select(const std::vector<std::string_view> &columns,
 		std::cout << '\n';
 		std::cout << "------------------\n";
 
-		sql_types::ExampleRow row;
-		for (int i = 0; i < *node.get_pair_count(); i++) {
-			row.deserialize(node.get_pair_value(i));
+		while (leaf_number) {
+			Node leaf(leaf_number);
+			sql_types::ExampleRow row;
+			for (int i = 0; i < *leaf.pair_count(); i++, rows_selected++) {
+				row.deserialize(leaf.pair_value(i));
 
-			std::cout << '|';
-			if (columns_contain(columns, "ID")) {
-				std::cout << ' ' << row.ID << " |";
+				std::cout << '|';
+				if (columns_contain(columns, "ID")) {
+					std::cout << ' ' << row.ID << " |";
+				}
+				if (columns_contain(columns, "Name")) {
+					std::cout << " \"" << row.Name << "\" |";
+				}
+				if (columns_contain(columns, "Value")) {
+					std::cout << ' ' << row.Value << " |";
+				}
+				std::cout << '\n';
 			}
-			if (columns_contain(columns, "Name")) {
-				std::cout << " \"" << row.Name << "\" |";
-			}
-			if (columns_contain(columns, "Value")) {
-				std::cout << ' ' << row.Value << " |";
-			}
-			std::cout << '\n';
+			leaf_number = *leaf.next_leaf();
+			// std::cout << "next leaf: " << leaf_number << '\n';
 		}
 
-		std::cout << "Total " << *node.get_pair_count() << " row/s selected\n";
+		std::cout << "Total " << rows_selected << " row/s selected\n";
 
 	} catch (const std::runtime_error &e) {
 		std::cout << e.what() << '\n';

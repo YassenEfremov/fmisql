@@ -36,9 +36,9 @@ struct ExampleRow {
 	}
 
 	void deserialize(void *src) {
-		std::memcpy(&this->ID, src, sizeof ID);
-		std::memcpy(&this->Name, (std::uint8_t *)src + sizeof ID, sizeof Name);
-		std::memcpy(&this->Value, (std::uint8_t *)src + sizeof ID + sizeof Name, sizeof Value);
+		std::memcpy(&this->ID, src, sizeof this->ID);
+		std::memcpy(&this->Name, (std::uint8_t *)src + sizeof this->ID, sizeof this->Name);
+		std::memcpy(&this->Value, (std::uint8_t *)src + sizeof this->ID + sizeof this->Name, sizeof this->Value);
 	}
 };
 

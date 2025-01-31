@@ -7,11 +7,9 @@
 #include "../commands/insert.hpp"
 #include "../commands/select.hpp"
 #include "../statement.hpp"
-#include "../schema.hpp"
 
 #include <iostream>
 #include <string>
-#include <vector>
 
 
 namespace fmisql
