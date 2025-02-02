@@ -2,8 +2,7 @@
 #define CLI_HPP
 
 
-namespace fmisql
-{
+namespace fmisql {
 
 /**
  * @brief Start the CLI

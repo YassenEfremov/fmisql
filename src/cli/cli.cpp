@@ -12,14 +12,10 @@
 #include <string>
 
 
-namespace fmisql
-{
-
-// const int line_length = 100;
+namespace fmisql {
 
 void cli() {
 	std::string line;
-	// line.reserve(line_length);
 
 	while (true) {
 

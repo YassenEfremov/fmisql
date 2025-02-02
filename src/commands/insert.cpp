@@ -20,6 +20,7 @@ namespace fmisql {
 // Insert INTO Sample {(1, "asd", 12), (2, "asd", 12), (3, "asd", 12), (4, "asd", 12), (5, "ddd", 5)}
 // Insert INTO Sample {(6, "asd", 12), (7, "asd", 12), (8, "asd", 12), (9, "asd", 12), (10, "ddd", 5)}
 // Insert INTO Sample {(11, "asd", 12), (12, "asd", 12), (13, "asd", 12), (14, "asd", 12), (15, "ddd", 5)}
+// Insert INTO Sample {(15, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 120)}
 
 void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow> rows) {
 

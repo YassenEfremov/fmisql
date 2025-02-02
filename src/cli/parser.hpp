@@ -5,6 +5,8 @@
 #include "../data_types.hpp"
 #include "../statement.hpp"
 
+#include <cstddef>
+
 #include <string_view>
 #include <vector>
 
@@ -36,14 +38,6 @@
 // };
 
 namespace fmisql {
-
-std::vector<Column> parse_create_columns(std::string_view columns_str);
-
-std::vector<sql_types::ExampleRow> parse_inserts(std::string_view columns_str);
-
-std::vector<std::string_view> parse_select_columns(std::string_view columns_str);
-
-void parse_conds(std::string_view columns_str);
 
 /**
  * @brief Parse the given command line
