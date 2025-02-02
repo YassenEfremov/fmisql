@@ -24,7 +24,13 @@ function test_command() {
 			exit 1
 		fi
 	else
-		printf "$GREEN  OK$RESET\n"
+		if [ "$2" = "should fail" ]; then
+			printf "$RED  FAILED$RESET\n"
+			printf "$output\n"
+			exit 1
+		else
+			printf "$GREEN  OK$RESET\n"
+		fi
 	fi
 	printf "\n"
 }
@@ -72,3 +78,14 @@ test_command "CreateTable Sample )"								"should fail"
 # test_command "CreateTable Sample id:Int, name:String"			"should fail"
 # test_command "CreateTable Sample  id : Int , name : String "	"should fail"
 # test_command "CreateTable Sample (idInt, name:String )"			"should fail"
+
+
+# # DropTable
+
+# # correct commands
+# test_command "DropTable Sample"
+# test_command "  DropTable  Sample  "
+
+# # wrong commands
+# test_command "DropTable"										"should fail"
+# test_command "  DropTable  "									"should fail"
