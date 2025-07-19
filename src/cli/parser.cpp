@@ -41,10 +41,13 @@ static std::string_view parse_name(std::string_view line, std::size_t &pos) {
 	if (line[0] >= '0' && line[0] <= '9') {
 		throw std::runtime_error("names cannot start with a digit");
 	}
-	std::size_t next_size = line.find_first_not_of(
+	std::size_t next_pos = line.find_first_not_of(
 		"_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", pos
 	);
-	next_size -= pos;
+	if (next_pos == std::string_view::npos) {
+		next_pos = line.size();
+	}
+	int next_size = next_pos - pos;
 	std::string_view name = line.substr(pos, next_size);
 	pos += next_size;
 	return name;
@@ -65,7 +68,7 @@ static void skip_spaces(std::string_view line, std::size_t &pos) {
 static void consume_string(std::string_view line, std::size_t &pos,
                            std::string_view str) {
 	for (int i = 0; i < str.size(); i++, pos++) {
-		if (line[pos] != str[i])
+		if (line.at(pos) != str[i])
 			throw std::runtime_error("expected " + std::string(str));
 	}
 }
@@ -86,7 +89,7 @@ static std::vector<Column> parse_create_columns(std::string_view line,
 
 	std::vector<Column> table_columns;
 
-	while (line[pos] != ')') {
+	while (line.at(pos) != ')') {
 		/**
 		 *      (<name>:<type>, ...)
 		 *      \/
@@ -115,7 +118,7 @@ static std::vector<Column> parse_create_columns(std::string_view line,
 		skip_spaces(line, pos);
 		std::string_view column_type_str = parse_name(line, pos);
 		skip_spaces(line, pos);
-		if (line[pos] == ',')
+		if (line.at(pos) == ',')
 			consume_string(line, pos, ",");
 		skip_spaces(line, pos);
 
@@ -134,6 +137,7 @@ static std::vector<Column> parse_create_columns(std::string_view line,
 
 		table_columns.push_back(Column{column_name, column_type_id});
 	}
+	consume_string(line, pos, ")");
 
 	if (table_columns.empty())
 		throw std::runtime_error("expected column names and types");

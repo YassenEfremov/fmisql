@@ -26,6 +26,22 @@ add_executable(fmisql
 	src/main.cpp
 )
 
+add_executable(test
+	src/cli/cli.cpp
+	src/cli/parser.cpp
+	src/commands/create_table.cpp
+	# src/commands/drop_table.cpp
+	src/commands/list_tables.cpp
+	src/commands/table_info.cpp
+	src/commands/insert.cpp
+	src/commands/select.cpp
+	src/btree.cpp
+	src/pager.cpp
+	src/schema.cpp
+	src/statement.cpp
+	test/cli.cpp
+)
+
 if (MSVC)
 	# compliant by default?
 else()
