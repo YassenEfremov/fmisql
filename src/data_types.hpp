@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <variant>
 
 
 namespace fmisql::sql_types {
@@ -15,7 +16,9 @@ enum class Id {
 
 using Int = int;
 using String = char[256];
-using Date = int;
+using Date = long;	// for now just so that it's different from Int
+
+using Value = std::variant<Int, Date>; // strings need to be reworked
 
 // temporary row structure
 struct ExampleRow {

@@ -7,8 +7,10 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <charconv>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 #include <iostream>
 
@@ -38,17 +40,15 @@ static void trim(std::string_view &str) {
  *   constraint
  */
 static std::string_view parse_name(std::string_view line, std::size_t &pos) {
-	if (line[0] >= '0' && line[0] <= '9') {
+	if (line.at(pos) >= '0' && line.at(pos) <= '9') {
 		throw std::runtime_error("names cannot start with a digit");
 	}
-	std::size_t next_pos = line.find_first_not_of(
+	std::size_t next_size = line.find_first_not_of(
 		"_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", pos
-	);
-	if (next_pos == std::string_view::npos) {
-		next_pos = line.size();
-	}
-	int next_size = next_pos - pos;
+	) - pos;
 	std::string_view name = line.substr(pos, next_size);
+	if (name.empty())
+		throw std::runtime_error("empty name");
 	pos += next_size;
 	return name;
 }
@@ -70,6 +70,97 @@ static void consume_string(std::string_view line, std::size_t &pos,
 	for (int i = 0; i < str.size(); i++, pos++) {
 		if (line.at(pos) != str[i])
 			throw std::runtime_error("expected " + std::string(str));
+	}
+	if (pos >= line.size()) pos = std::string_view::npos;
+}
+
+/**
+ * @brief Parses a value staring at pos. pos is updated to point one character
+ *        past the end of the value.
+ * 
+ * Possible values are:
+ * 
+ * - Int: any integer number
+ * 
+ * - String: any text surrounded by double quotes (e.g. "Some text")
+ */
+static sql_types::Value parse_value(std::string_view line, std::size_t &pos) {
+
+	if (line.at(pos) >= '0' && line.at(pos) <= '9') {
+		std::size_t next_size = line.find_first_not_of("0123456789", pos) - pos;
+		sql_types::Int integer;
+		std::string_view value_str = line.substr(pos, next_size);
+		std::from_chars(value_str.data(), value_str.data() + value_str.size(), integer);
+		pos += next_size;
+		return sql_types::Value(integer);
+
+	} else if (line.at(pos) == '"') {
+		consume_string(line, pos, "\"");
+		std::size_t string_size = line.find_first_of("\"", pos) - pos;
+		std::string_view string_as_view = line.substr(pos, string_size);
+		sql_types::String string;
+		string_as_view.copy(string, sizeof string);
+		pos += string_size;
+		consume_string(line, pos, "\"");
+
+		sql_types::Int temp = -1;
+		return sql_types::Value(temp); // temporary, string type needs to be reworked
+
+	} else {
+		throw std::runtime_error("invalid value");
+	}
+}
+
+/**
+ * @brief Parses an operator staring at pos. pos is updated to point one
+ *        character past the end of the operator.
+ * 
+ * Possible operators are:
+ * 
+ * - = equals
+ * 
+ * - != not equals
+ * 
+ * - < less than
+ * 
+ * - > greater than
+ * 
+ * - <= less than or equals
+ * 
+ * - >= greater than or equals
+ */
+static void parse_operator(std::string_view line, std::size_t &pos) {
+	char first = line.at(pos);
+	char second = line.at(pos + 1);
+
+	if (first == '=') {
+		consume_string(line, pos, "=");
+		
+	} else if (first == '!') {
+		consume_string(line, pos, "!=");
+
+	} else if (first == '<') {
+		if (second == ' ') {
+			consume_string(line, pos, "<");
+
+		} else if (second == '=') {
+			consume_string(line, pos, "<=");
+
+		} else {
+			throw std::runtime_error("invalid logic operation in select condition");
+		}
+	} else if (first == '>') {
+		if (second == ' ') {
+			consume_string(line, pos, ">");
+
+		} else if (second == '=') {
+			consume_string(line, pos, ">=");
+
+		} else {
+			throw std::runtime_error("invalid logic operation in select condition");
+		}
+	} else {
+		throw std::runtime_error("invalid logic operation in select condition");
 	}
 }
 
@@ -149,7 +240,7 @@ static std::vector<Column> parse_create_columns(std::string_view line,
  * @brief Parses rows in the format of the Insert command staring at pos. pos is
  *        updated to point one character past the closing curly brace.
  */
-static std::vector<sql_types::ExampleRow> parse_inserts(std::string_view line,
+static std::vector<std::vector<sql_types::Value>> parse_inserts(std::string_view line,
                                                         std::size_t &pos) {
 
 	/**
@@ -157,77 +248,45 @@ static std::vector<sql_types::ExampleRow> parse_inserts(std::string_view line,
 	 *  |
 	 * pos
 	 */
-	if (line[pos] != '{') {
-		throw std::runtime_error("expected '{'\n");
-	}
-	pos++;
+	consume_string(line, pos, "{");
 
-	std::vector<sql_types::ExampleRow> table_inserts;
+	std::vector<std::vector<sql_types::Value>> table_inserts;
 
-	while (line[pos] != '}') {
-		pos = line.find_first_of("(", pos);
+	while (line.at(pos) != '}') {
 		/**
 		 * {(<value>, ...), ...}
 		 *  |
 		 * pos
 		 */
-		if (line[pos] != '(') {
-			throw std::runtime_error("expected '('\n");
-		}
-		pos++;
+		skip_spaces(line, pos);
+		consume_string(line, pos, "(");
 
-		sql_types::ExampleRow row;
+		std::vector<sql_types::Value> row_values;
 
 		while (line[pos] != ')') {
 			/**
 			 *     {(<value>, ...), ...}
-			 *      ^^
-			 * spaces allowed
+			 *       ^^^^^^^
+			 *
 			 */
-			pos = line.find_first_not_of(" ,", pos);
+			skip_spaces(line, pos);
+			row_values.push_back(parse_value(line, pos));
+			skip_spaces(line, pos);
 
-			// TEMPORARY
-			/**
-			 * {(<ID>, <Name>, <Value>), ...}
-			 *   |^^^^
-			 *  pos + next_size
-			 */
-			std::size_t next_size = line.find_first_of(",", pos) - pos;
-			// std::cout << inserts_str.substr(pos, next_size) << '\n';
-			row.ID = std::stoi(line.substr(pos, next_size).data());
-			pos = pos + next_size;
-			pos = line.find_first_not_of(" ,\"", pos);
-			/**
-			 * {(<ID>, "<Name>", <Value>), ...}
-			 *          |^^^^^^
-			 *         pos + next_size
-			 */
-			next_size = line.find_first_of(",\"", pos) - pos;
-			// std::cout << inserts_str.substr(pos, next_size) << '\n';
-			line.copy(row.Name, 256, pos);
-			// row.Name[next_size] = '\0';
-			pos = pos + next_size + 1;
-			pos = line.find_first_not_of(" ,", pos);
-			/**
-			 * {(<ID>, <Name>, <Value>), ...}
-			 *                 |^^^^^^^
-			 *                pos + next_size
-			 */
-			next_size = line.find_first_of(")", pos) - pos;
-			// std::cout << inserts_str.substr(pos, next_size) << '\n';
-			row.Value = std::stoi(line.substr(pos, next_size).data());
-			pos = pos + next_size;
-			// pos = inserts_str.find_first_not_of(" ,", pos);
+			if (line.at(pos) != ')')
+				consume_string(line, pos, ",");
 		}
-		pos++;
 
-		// std::cout << "debug: parsed row: " <<
-		// 	"  " << row.ID <<
-		// 	"  " << row.Name <<
-		// 	"  " << row.Value << '\n';
-		
-		table_inserts.push_back(row);
+		if (row_values.empty())
+			throw std::runtime_error("empty value");
+
+		consume_string(line, pos, ")");
+		table_inserts.push_back(row_values);
+		skip_spaces(line, pos);
+		if (line.at(pos) != '}')
+			consume_string(line, pos, ",");
 	}
+	consume_string(line, pos, "}");
 
 	return table_inserts;
 }
@@ -239,7 +298,7 @@ static std::vector<sql_types::ExampleRow> parse_inserts(std::string_view line,
 static std::vector<std::string_view> parse_select_columns(std::string_view line,
                                                           std::size_t &pos) {
 
-	if (line[pos] == '*') {
+	if (line.at(pos) == '*') {
 		// an empty vector means "all columns", because we can't know
 		// what columns the table has without checking the schema/pager
 		pos++;
@@ -256,18 +315,82 @@ static std::vector<std::string_view> parse_select_columns(std::string_view line,
 		 * pos + next_size
 		 */
 		columns.push_back(parse_name(line, pos));
-		if (line[pos] == ',')
+		skip_spaces(line, pos);
+		if (line.at(pos) == ',') {
 			consume_string(line, pos, ",");
-		else
+			skip_spaces(line, pos);
+		} else {
 			break;
+		}
 	}
 
 	return columns;
 }
 
+/**
+ * @brief Parses conditions in the format of the Select and Remove commands
+ *        starting at pos.
+ */
+static void parse_conditions(std::string_view line, std::size_t &pos) {
+	while (true) {
+		/**
+		 *  <column> <operator> <value> <logic operation> ...
+		 *  |^^^^^^^
+		 * pos
+		 */
+		std::string_view column_name = parse_name(line, pos);
+
+		/**
+		 *  <column> <operator> <value> <logic operation> ...
+		 *           |^^^^^^^^^
+		 *          pos
+		 */
+		skip_spaces(line, pos);
+		/*std::string_view operator_str =*/ parse_operator(line, pos);
+
+		/**
+		 *  <column> <operator> <value> <logic operation> ...
+		 *                      |^^^^^^
+		 *                     pos
+		 */
+		skip_spaces(line, pos);
+		/*std::string_view value =*/ parse_value(line, pos);
+
+		if (pos == std::string_view::npos)
+			break;
+
+		/**
+		 *  <column> <operator> <value> <logic operation> ...
+		 *                              |^^^^^^^^^^^^^^^^
+		 *                             pos
+		 */
+		skip_spaces(line, pos);
+		std::string_view logic_operation_str = parse_name(line, pos);
+		pos -= logic_operation_str.size(); // reset because of consume later
+		if (logic_operation_str != "AND" &&
+		    logic_operation_str != "OR" &&
+		    logic_operation_str != "NOT") {
+			break;
+		}
+
+		consume_string(line, pos, logic_operation_str);
+		skip_spaces(line, pos);
+	}
+
+	// return ?
+}
+
+/**
+ * @brief Parses table columns in the format of the Select command starting at
+ *        pos.
+ */
+static void parse_order_by_columns(std::string_view line, std::size_t &pos) {
+	// TODO
+}
+
 Statement parse_line(std::string_view line) {
 
-	// TODO: error handling
+	// TODO: more error handling
 
 	trim(line);
 
@@ -303,7 +426,7 @@ Statement parse_line(std::string_view line) {
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
 			return Statement(Statement::Type::INVALID);
-		} catch (const std::runtime_error &e) {
+		} catch (const std::exception &e) {
 			std::cout << e.what() << '\n';
 			return Statement(Statement::Type::INVALID);
 		}
@@ -324,6 +447,9 @@ Statement parse_line(std::string_view line) {
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
 			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
+			std::cout << e.what() << '\n';
+			return Statement(Statement::Type::INVALID);
 		}
 
 		return Statement(Statement::Type::DROP_TABLE, table_name);
@@ -338,6 +464,9 @@ Statement parse_line(std::string_view line) {
 				throw std::runtime_error("too many arguments given");
 
 		} catch (const std::runtime_error &e) {
+			std::cout << e.what() << '\n';
+			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
 			std::cout << e.what() << '\n';
 			return Statement(Statement::Type::INVALID);
 		}
@@ -358,16 +487,19 @@ Statement parse_line(std::string_view line) {
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
 			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
+			std::cout << e.what() << '\n';
+			return Statement(Statement::Type::INVALID);
 		}
 
 		return Statement(Statement::Type::TABLE_INFO, table_name);
 
 	} else if (command_name == "Select") {
-		std::vector<std::string_view> column_names;
 		std::string_view table_name;
+		std::vector<std::string_view> column_names;
 		try {
 			/**
-			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 * Select <columns> FROM <table>
 			 *        |^^^^^^^^^
 			 *       pos + next_size
 			 */
@@ -375,7 +507,7 @@ Statement parse_line(std::string_view line) {
 			column_names = parse_select_columns(line, pos);
 
 			/**
-			 * Select <columns> FROM <table> WHERE <conditions> ORDER BY <column>
+			 * Select <columns> FROM <table>
 			 *                  |^^^^
 			 *                 pos + next_size
 			 */
@@ -383,7 +515,7 @@ Statement parse_line(std::string_view line) {
 			consume_string(line, pos, "FROM");
 
 			/**
-			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 * Select <columns> FROM <table>
 			 *                       |^^^^^^^
 			 *                      pos + next_size
 			 */
@@ -394,7 +526,7 @@ Statement parse_line(std::string_view line) {
 				return Statement(Statement::Type::SELECT, table_name, {}, column_names);
 
 			/**
-			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 * Select <columns> FROM <table> WHERE <cond>
 			 *                               |^^^^^
 			 *                              pos + next_size
 			 */
@@ -402,24 +534,92 @@ Statement parse_line(std::string_view line) {
 			consume_string(line, pos, "WHERE");
 
 			/**
-			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <column>
+			 * Select <columns> FROM <table> WHERE <cond>
 			 *                                     |^^^^^^
 			 *                                    pos + next_size
 			 */
-			// conditions = parse_conditions(line.substr(pos));
+			skip_spaces(line, pos);
+			/*conditions =*/ parse_conditions(line, pos);
+
+			if (pos == std::string_view::npos)
+				return Statement(Statement::Type::SELECT, table_name, {}, column_names);
+
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <columns>
+			 *                                            |^^^^^^^^
+			 *                                           pos + next_size
+			 */
+			skip_spaces(line, pos);
+			consume_string(line, pos, "ORDER BY");
+
+			/**
+			 * Select <columns> FROM <table> WHERE <cond> ORDER BY <columns>
+			 *                                                     |^^^^^^^^^
+			 *                                                    pos + next_size
+			 */
+			skip_spaces(line, pos);
+			/*columns =*/ parse_order_by_columns(line, pos);
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
+			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
+			std::cout << e.what() << '\n';
 			return Statement(Statement::Type::INVALID);
 		}
 
 		return Statement(Statement::Type::SELECT, table_name, {}, column_names);
 
 	} else if (command_name == "Remove") {
-		
-		// TODO
+		std::string_view table_name;
+		try {
+			/**
+			 * Remove FROM <table>
+			 *        |^^^^
+			 *       pos + next_size
+			 */
+			skip_spaces(line, pos);
+			consume_string(line, pos, "FROM");
 
-		return Statement(Statement::Type::REMOVE);
+			/**
+			 * Remove FROM <table>
+			 *             |^^^^^^^
+			 *            pos + next_size
+			 */
+			skip_spaces(line, pos);
+			table_name = parse_name(line, pos);
+
+			if (pos == std::string_view::npos)
+				return Statement(Statement::Type::REMOVE, table_name);
+
+			/**
+			 * REMOVE FROM <table> WHERE <cond>
+			 *                     |^^^^^
+			 *                    pos + next_size
+			 */
+			skip_spaces(line, pos);
+			consume_string(line, pos, "WHERE");
+
+			/**
+			 * Remove FROM <table> WHERE <cond>
+			 *                           |^^^^^^
+			 *                          pos + next_size
+			 */
+			skip_spaces(line, pos);
+			/*conditions =*/ parse_conditions(line, pos);
+
+			if (pos == std::string_view::npos)
+				return Statement(Statement::Type::SELECT, table_name);
+
+		} catch (const std::out_of_range &e) {
+			std::cout << "not enough arguments given\n";
+			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
+			std::cout << e.what() << '\n';
+			return Statement(Statement::Type::INVALID);
+		}
+
+		return Statement(Statement::Type::REMOVE, table_name);
 
 	} else if (command_name == "Insert") {
 		std::string_view table_name;
@@ -447,10 +647,13 @@ Statement parse_line(std::string_view line) {
 			 *                    pos + next_size
 			 */
 			skip_spaces(line, pos);
-			rows = parse_inserts(line, pos);
+			/*rows =*/ parse_inserts(line, pos);
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";
+			return Statement(Statement::Type::INVALID);
+		} catch (const std::exception &e) {
+			std::cout << e.what() << '\n';
 			return Statement(Statement::Type::INVALID);
 		}
 

@@ -70,12 +70,11 @@ int main() {
 		test_command("CreateTable Sample (ID:Int, Name:String, Value:Int)");
 
 		// correct commands
-
-		// with one column
 		test_command("CreateTable Sample (id:Int)");
-		test_command("CreateTable Sample (id: Int)");
+		test_command("CreateTable S1mple (id:Int)");
+		test_command("CreateTable Sample(id: Int)");
 		test_command("  CreateTable  Sample  (  id  :  Int  )  ");
-		// with multiple columns
+
 		test_command("CreateTable Sample (id:Int, name:String)");
 		test_command("CreateTable Sample (id:Int,name:String)");
 		test_command("CreateTable Sample (id:Int ,name:String)");
@@ -84,8 +83,8 @@ int main() {
 		test_command("  CreateTable  Sample  (  id  :  Int  ,  name  :  String  )  ");
 
 		// wrong commands
-
-		// with one column
+		test_command("CreateTable 5ample (id:Int)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Samp!e (id:Int)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample id:Int)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample  id  :  Int  )  ", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (id:Int", Condition::SHOULD_FAIL);
@@ -94,6 +93,9 @@ int main() {
 		test_command("CreateTable Sample  id  :  Int  ", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (idInt)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (id Int)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (id:)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (:String)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (id::Int)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (id, )", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (, Int)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (,)", Condition::SHOULD_FAIL);
@@ -101,7 +103,8 @@ int main() {
 		test_command("CreateTable Sample (  )", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample ("	, Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample )"	, Condition::SHOULD_FAIL);
-		// with multiple columns
+		test_command("CreateTable Sample"	, Condition::SHOULD_FAIL);
+	
 		test_command("CreateTable Sample id:Int, name:String)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample  id  :  Int  ,  name  :  String  )  ", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (id:Int, name:String", Condition::SHOULD_FAIL);
@@ -115,12 +118,10 @@ int main() {
 	/* DropTable command */ {
 
 		// correct commands
-
 		test_command("DropTable Sample");
 		test_command("  DropTable  Sample  ");
 
 		// wrong commands
-
 		test_command("DropTable", Condition::SHOULD_FAIL);
 		test_command("  DropTable  ", Condition::SHOULD_FAIL);
 	}
@@ -128,42 +129,111 @@ int main() {
 	/* ListTables command */ {
 
 		// correct commands
-
-		test_command("ListTables");
+		test_command("ListTables"); // by requirement
 		test_command("  ListTables  ");
 
 		// wrong commands
-
 		// can't mess it up :)
 	}
 
 	/* TableInfo command */ {
 		
 		// correct commands
-
-		test_command("TableInfo Sample");
+		test_command("TableInfo Sample"); // by requirement
 		test_command("  TableInfo  Sample  ");
 
 		// wrong commands
-
 		test_command("TableInfo", Condition::SHOULD_FAIL);
 		test_command("  TableInfo  ", Condition::SHOULD_FAIL);
 	}
 
-	// /* Select command */ {
+	/* Select command */ {
 
-	// 	// by requirement
-	// 	test_command("Select Name FROM Sample WHERE ID != 5 AND Value < 50");
-	// 	test_command("Select * FROM Sample WHERE ID != 5 AND Name > “Baba” ORDER BY Name");
+		// by requirement
+		test_command("Select Name FROM Sample WHERE ID != 5 AND Value < 50");
+		test_command("Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name");
 		
-	// 	// correct commands
+		// correct commands
+		test_command("Select Name FROM Sample");
+		test_command("  Select  Name  FROM  Sample  ");
+		test_command("Select Id, Name FROM Sample");
+		test_command("  Select  Id  ,  Name  FROM  Sample  ");
+		test_command("Select * FROM Sample");
+		test_command("  Select  *  FROM  Sample  ");
+		test_command("Select Id FROM Sample WHERE Id = 12");
+		test_command("  Select  Id  FROM  Sample  WHERE  Id  =  12  ");
+		test_command("Select Name FROM Sample WHERE Name = \"Baba\"");
+		test_command("  Select  Name  FROM  Sample  WHERE  Name  =  \"Baba\"  ");
+		test_command("Select Name FROM Sample WHERE Name = \"Baba\" ORDER BY Name");
+		test_command("Select Id, Name FROM Sample WHERE Id=5 AND Name=\"Baba\" OR Id=6 AND Name!=\"Baba\" ORDER BY Name");
 
-	// 	test_command("Select Sample");
+		// wrong commands
+		test_command("Select FROM Sample", Condition::SHOULD_FAIL);
+		test_command("Select Name Sample", Condition::SHOULD_FAIL);
+		test_command("Select Name FROM", Condition::SHOULD_FAIL);
+		test_command("Select FROM", Condition::SHOULD_FAIL);
+		test_command("Select Sample", Condition::SHOULD_FAIL);
+		test_command("Select", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Id", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Name !=", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE != \"Baba\"", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Name \"Baba\"", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Id == 1 AND", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Id == 1 AND Name", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Id == 1 AND ==", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE Name AND Id > 5", Condition::SHOULD_FAIL);
+		test_command("Select Id, Name FROM Sample WHERE != \"Baba\" AND Id > 5", Condition::SHOULD_FAIL);
+	}
 
-	// 	// wrong commands
+	/* Remove command */ {
+		
+		// correct commands
+		test_command("Remove FROM Sample");
+		test_command("  Remove  FROM  Sample  ");
+		test_command("Remove FROM Sample WHERE Id = 12");
 
+		// wrong commands
+		test_command("Remove Sample", Condition::SHOULD_FAIL);
+		test_command("Remove FROM", Condition::SHOULD_FAIL);
+		test_command("Remove", Condition::SHOULD_FAIL);
+		// conditions after WHERE clause are parsed identically to those for
+		// Select command, so no need to test again
+	}
 
-	// }
+	/* Insert command */ {
+
+		// by requirement
+		test_command("Insert INTO Sample {(1, \"Test\", 1), (2, \"something else\", 100)}");
+		
+		// correct commands
+		test_command("Insert INTO Sample {(12)}");
+		test_command("Insert INTO Sample {(12), (13)}");
+		test_command("Insert INTO Sample {(12, \"Some text\")}");
+		test_command("Insert INTO Sample {(12, \"Some text\", \"abc\", 0), (12, \"Some more text\", \"efg\", 1)}");
+		test_command("  Insert  INTO  Sample  {  (  12  ,  \"Some text\")  ,  (  13  ,  \"Some more text\"  )  }  ");
+
+		// wrong commands
+		test_command("Insert Sample {(12)}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO {(12)}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample", Condition::SHOULD_FAIL);
+		test_command("Insert INTO", Condition::SHOULD_FAIL);
+		test_command("Insert Sample", Condition::SHOULD_FAIL);
+		test_command("Insert {(12)}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample (12)}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(12)", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample (12)", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {12)", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample (12}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample 12)", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample (12", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample 12", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {()}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(12 \"Some text\")}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(12, , \"Some text\")}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(12, \"Some text\") (13, \"Some more text\")}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(12, \"Some text\"), , (14, \"Some even more text\")}", Condition::SHOULD_FAIL);
+	}
 
 	std::cout << "Results:\n"
 		<< total << " total, "
