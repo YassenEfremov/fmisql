@@ -1,3 +1,5 @@
+#include "parser.hpp"
+
 #include "../src/cli/parser.hpp"
 #include "../src/commands/create_table.hpp"
 #include "../src/commands/list_tables.hpp"
@@ -6,6 +8,8 @@
 #include "../src/commands/select.hpp"
 #include "../src/statement.hpp"
 
+#include "util.hpp"
+
 #include <cstdlib>
 
 #include <iostream>
@@ -13,26 +17,13 @@
 #include <string_view>
 
 
-#define GREEN "\x1b[32m"
-#define RED "\x1b[31m"
-#define CYAN "\x1b[36m"
-#define RESET "\x1b[0m"
-
-
-int total = 0;
-int passed = 0;
-int failed = 0;
-
-enum class Condition {
-	SHOULD_PASS,
-	SHOULD_FAIL
-};
+namespace fmisql::test {
 
 /**
  * @brief Tests whether the syntax of the given command is correct.
  *        Default condition is SHOULD_PASS.
  */
-void test_command(std::string_view line, Condition condition = Condition::SHOULD_PASS) {
+void test_command(std::string_view line, Condition condition) {
 	std::cout << "Testing command:\n\"" << line <<  "\"\n";
 	fmisql::Statement statement = fmisql::parse_line(line);
 	if (statement.type != fmisql::Statement::Type::INVALID) {
@@ -55,14 +46,17 @@ void test_command(std::string_view line, Condition condition = Condition::SHOULD
 		case Condition::SHOULD_FAIL:
 			passed++;
 			std::cout << CYAN "  failed... OK\n" RESET;
+			break;
 		}
 	}
 	total++;
 	std::cout << '\n';
 }
 
-
-int main() {
+/**
+ * @brief Tests the entire syntax of our SQL language
+ */
+void test_parser() {
 
 	/* CreateTable command */ {
 
@@ -234,11 +228,6 @@ int main() {
 		test_command("Insert INTO Sample {(12, \"Some text\") (13, \"Some more text\")}", Condition::SHOULD_FAIL);
 		test_command("Insert INTO Sample {(12, \"Some text\"), , (14, \"Some even more text\")}", Condition::SHOULD_FAIL);
 	}
+}
 
-	std::cout << "Results:\n"
-		<< total << " total, "
-		<< passed << GREEN " passed, " RESET
-		<< failed << RED " failed" RESET;
-
-	return 0;
 }

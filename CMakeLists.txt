@@ -42,11 +42,10 @@ add_executable(test
 	src/schema.cpp
 	src/statement.cpp
 
-	# test/util.cpp
-	# test/parser.cpp
-	# test/cmd_seq.cpp
-	# test/main.cpp
-	test/cli.cpp
+	test/util.cpp
+	test/parser.cpp
+	test/cmd_seq.cpp
+	test/main.cpp
 )
 
 if (MSVC)
