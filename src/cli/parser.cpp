@@ -97,14 +97,10 @@ static sql_types::Value parse_value(std::string_view line, std::size_t &pos) {
 	} else if (line.at(pos) == '"') {
 		consume_string(line, pos, "\"");
 		std::size_t string_size = line.find_first_of("\"", pos) - pos;
-		std::string_view string_as_view = line.substr(pos, string_size);
-		sql_types::String string;
-		string_as_view.copy(string, sizeof string);
+		sql_types::String string = line.substr(pos, string_size);
 		pos += string_size;
 		consume_string(line, pos, "\"");
-
-		sql_types::Int temp = -1;
-		return sql_types::Value(temp); // temporary, string type needs to be reworked
+		return sql_types::Value(string);
 
 	} else {
 		throw std::runtime_error("invalid value");
@@ -169,7 +165,7 @@ static void parse_operator(std::string_view line, std::size_t &pos) {
  *        at pos. pos is updated to point one character past the closing
  *        parenthesis.
  */
-static std::vector<Column> parse_create_columns(std::string_view line,
+static std::vector<sql_types::Column> parse_create_columns(std::string_view line,
                                                 std::size_t &pos) {
 	/**
 	 *  (<name>:<type>, ...)
@@ -178,7 +174,7 @@ static std::vector<Column> parse_create_columns(std::string_view line,
 	 */
 	consume_string(line, pos, "(");
 
-	std::vector<Column> table_columns;
+	std::vector<sql_types::Column> table_columns;
 
 	while (line.at(pos) != ')') {
 		/**
@@ -226,7 +222,11 @@ static std::vector<Column> parse_create_columns(std::string_view line,
 			);
 		}
 
-		table_columns.push_back(Column{column_name, column_type_id});
+		if (table_columns.size() > sql_types::max_string_size) {
+			throw std::runtime_error("maximum column count is " + std::to_string(sql_types::max_string_size));
+		} else {
+			table_columns.push_back(sql_types::Column{column_name, column_type_id});
+		}
 	}
 	consume_string(line, pos, ")");
 
@@ -354,7 +354,7 @@ static void parse_conditions(std::string_view line, std::size_t &pos) {
 		 *                     pos
 		 */
 		skip_spaces(line, pos);
-		/*std::string_view value =*/ parse_value(line, pos);
+		sql_types::Value value = parse_value(line, pos);
 
 		if (pos == std::string_view::npos)
 			break;
@@ -395,7 +395,7 @@ Statement parse_line(std::string_view line) {
 	trim(line);
 
 	/**
-	 *    <command>
+	 *    <command> ...
 	 *    |^^^^^^^^^
 	 *   pos + next_size
 	 */
@@ -405,7 +405,7 @@ Statement parse_line(std::string_view line) {
 
 	if (command_name == "CreateTable") {
 		std::string_view table_name;
-		std::vector<Column> table_columns;
+		std::vector<sql_types::Column> table_columns;
 		try {
 			/**
 			 * CreateTable <name> (<name>:<type>, ...)

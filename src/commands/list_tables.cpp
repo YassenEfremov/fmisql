@@ -1,6 +1,10 @@
 #include "list_tables.hpp"
 
 #include "../btree.hpp"
+#include "../schema.hpp"
+#include "../pager.hpp"
+
+#include <cstdint>
 
 #include <iostream>
 
@@ -9,13 +13,14 @@ namespace fmisql {
 	
 void list_tables() {
 
-	Node node(0, schema_row_size);
+	BplusTree &schema_BplusTree = BplusTree::get_schema();
+	std::uint32_t table_count = schema_BplusTree.get_cell_count();
 
-	std::cout << "There are " << *node.pair_count() << " table/s in the database:\n";
+	std::cout << "There are " << table_count << " table/s in the database:\n";
 
 	SchemaRow row("", 0, "");
-	for (int i = 0; i < *node.pair_count(); i++) {
-		row.deserialize(node.pair_value(i));
+	for (int i = 0; i < table_count; i++) {
+		row.deserialize(schema_BplusTree.get_cell_value(i));
 
 		std::cout << "    " << row.table_name << '\n';
 	}

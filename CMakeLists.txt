@@ -20,6 +20,7 @@ add_executable(fmisql
 	src/commands/insert.cpp
 	src/commands/select.cpp
 	src/btree.cpp
+	src/fmisql.cpp
 	src/pager.cpp
 	src/schema.cpp
 	src/statement.cpp
@@ -36,9 +37,15 @@ add_executable(test
 	src/commands/insert.cpp
 	src/commands/select.cpp
 	src/btree.cpp
+	src/fmisql.cpp
 	src/pager.cpp
 	src/schema.cpp
 	src/statement.cpp
+
+	# test/util.cpp
+	# test/parser.cpp
+	# test/cmd_seq.cpp
+	# test/main.cpp
 	test/cli.cpp
 )
 

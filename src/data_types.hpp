@@ -3,22 +3,30 @@
 
 #include <cstdint>
 #include <cstring>
+#include <string_view>
 #include <variant>
+#include <ctime>
 
 
 namespace fmisql::sql_types {
 
 enum class Id {
 	INT,
-	DATE,
-	STRING
+	STRING,
+	DATE
 };
 
 using Int = int;
-using String = char[256];
-using Date = long;	// for now just so that it's different from Int
+using String = std::string_view;
+using Date = std::time_t;
 
-using Value = std::variant<Int, Date>; // strings need to be reworked
+constexpr std::size_t max_string_size = 256;
+constexpr std::size_t max_int_size = sizeof Int;
+constexpr std::size_t max_date_size = sizeof Date;
+
+using Value = std::variant<Int, String, Date>;
+
+struct Column { std::string_view name; sql_types::Id type_id; };
 
 // temporary row structure
 struct ExampleRow {

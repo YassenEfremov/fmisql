@@ -1,16 +1,13 @@
-#include "cli/cli.hpp"
-#include "pager.hpp"
-
-#include <iostream>
+#include "../include/fmisql.hpp"
 
 
 int main() {
 
-	fmisql::db_init();
+	fmisql::init();
 
 	fmisql::cli();
 
-	fmisql::db_deinit();
+	fmisql::deinit();
 
 	return 0;
 }

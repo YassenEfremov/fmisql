@@ -5,6 +5,7 @@
 #include "../data_types.hpp"
 #include "../cli/parser.hpp"
 #include "../statement.hpp"
+#include "../schema.hpp"
 
 #include <cstdint>
 
@@ -16,16 +17,17 @@ namespace fmisql {
 
 void table_info(std::string_view name) {
 
-	Node node(0, schema_row_size);
+	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
+	// TODO: use some form of a select statement instead of a loop
 	SchemaRow row("", 0, "");
-	for (int i = 0; i < *node.pair_count(); i++) {
-		row.deserialize(node.pair_value(i));
+	for (int i = 0; i < schema_BplusTree.get_cell_count(); i++) {
+		row.deserialize(schema_BplusTree.get_cell_value(i));
 
 		if (row.table_name == name) {
 			std::cout << "Table " << name << " : ";
 
-			Statement statement = parse_line(row.sql);
+			Statement statement = parse_line(row.original_sql);
 
 			std::cout << '(';
 			for (int i = 0; i < statement.create_columns.size(); i++) {
@@ -44,11 +46,11 @@ void table_info(std::string_view name) {
 			}
 			std::cout << ")\n";
 
-			Node table_node(row.page);
-			std::uint32_t row_count = *table_node.pair_count();
-			std::cout << "Total " << row_count << " rows (" <<
-				static_cast<double>(row_count * example_row_size)/1000 <<
-				" KB data) in the table\n";
+			BplusTree &table_BplusTree = BplusTree::get_table(row.root_page);
+			std::uint32_t row_count = table_BplusTree.get_cell_count();
+			std::cout << "Total " << row_count << " rows ("
+				<< static_cast<double>(row_count * table_BplusTree.get_value_size())/1000
+				<< " KB data) in the table\n";
 
 			return;
 		}

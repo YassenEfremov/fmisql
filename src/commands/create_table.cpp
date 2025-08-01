@@ -5,11 +5,14 @@
 #include "../data_types.hpp"
 #include "../pager.hpp"
 #include "../statement.hpp"
+#include "../schema.hpp"
 
 #include <cstdint>
 
 #include <iostream>
+#include <string>
 #include <string_view>
+#include <vector>
 
 
 namespace fmisql {
@@ -23,48 +26,19 @@ namespace fmisql {
 // CreateTable Sample6 (ID:Int, Name:String, Value:Int)
 // CreateTable Sample7 (ID:Int, Name:String, Value:Int)
 
-void create_table(std::string_view name, std::vector<Column> columns,
+void create_table(std::string_view name, const std::vector<sql_types::Column> &columns,
 	std::string_view original_sql) {
 
-	// for (auto tc : table_columns) {
-	// 	std::cout << tc.name << " - ";
-	// 	switch (tc.type) {
-	// 		case DataType::INT: std::cout << "INT\n"; break;
-	// 		case DataType::STRING: std::cout << "STRING\n"; break;
-	// 		case DataType::DATE: std::cout << "DATE\n"; break;
-	// 	}
-	// }
-
-	// for now this is always the case
-	Node node(0, schema_row_size);
-	node.set_type(Node::Type::LEAF);
-	*node.is_root() = true;
-	*node.next_leaf() = 0;
-
-	SchemaRow row(name, Pager::page_count, original_sql);
-
-	std::uint32_t row_size = 0;
-	for (Column column : columns) {
-		switch (column.type_id) {
-		case sql_types::Id::INT:
-			row_size += sizeof(sql_types::Int);
-			break;
-		case sql_types::Id::STRING:
-			row_size += sizeof(sql_types::String);
-			break;
-		case sql_types::Id::DATE:
-			break;
-		}
-	}
-	Node new_node(Pager::page_count, row_size);
-	new_node.set_type(Node::Type::LEAF);
-	*new_node.is_root() = true;
-	*new_node.next_leaf() = 0;
+	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
 	try {
-		std::uint8_t buf[schema_row_size];
-		row.serialize(buf);
-		node.insert(std::hash<std::string_view>()(name), buf);
+		BplusTree &table_BplusTree = BplusTree::create(columns);
+		SchemaRow schema_row(name, table_BplusTree.get_root_page(), original_sql);
+
+		std::uint8_t buffer[schema_row_size];
+		schema_row.serialize(buffer);
+		schema_BplusTree.insert(schema_row.root_page, buffer);
+
 	} catch (const std::runtime_error &e) {
 		std::cout << "error: " << e.what() << '\n';
 	}

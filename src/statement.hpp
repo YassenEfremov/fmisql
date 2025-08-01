@@ -9,8 +9,6 @@
 
 namespace fmisql {
 
-struct Column { std::string_view name; sql_types::Id type_id; };
-
 struct Statement {
 
     enum class Type {
@@ -27,15 +25,14 @@ struct Statement {
     Statement(
         Type type,
         std::string_view table_name = "",
-        std::vector<Column> create_columns = {},
-        std::vector<std::string_view> select_columns = {},
-        std::vector<sql_types::ExampleRow> insert_rows = {}
+        const std::vector<sql_types::Column> &create_columns = {},
+        const std::vector<std::string_view> &select_columns = {},
+        const std::vector<sql_types::ExampleRow> &insert_rows = {}
     );
 
     Type type;
-
     std::string_view table_name;
-    std::vector<Column> create_columns;
+    std::vector<sql_types::Column> create_columns;
     std::vector<std::string_view> select_columns;
     // Remove?
     std::vector<sql_types::ExampleRow> insert_rows;

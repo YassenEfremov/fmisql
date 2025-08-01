@@ -12,9 +12,9 @@ constexpr const char db_filename[] = "fmisql.db";
 
 constexpr int page_size = 4096;
 constexpr int table_max_pages = 100; // temporary
-constexpr int schema_row_size = sizeof(sql_types::String) +
-                                sizeof(sql_types::Int) +
-                                sizeof(sql_types::String);
+constexpr int schema_row_size = sql_types::max_string_size +
+                                sql_types::max_int_size +
+                                sql_types::max_string_size;
 
 constexpr int example_row_size = sizeof(sql_types::Int) +
                                  sizeof(sql_types::String) +
