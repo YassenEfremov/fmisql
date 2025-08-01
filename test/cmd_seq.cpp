@@ -1,5 +1,6 @@
 #include "cmd_seq.hpp"
 
+#include "../include/fmisql.hpp"
 #include "../src/cli/parser.hpp"
 #include "../src/commands/create_table.hpp"
 #include "../src/commands/list_tables.hpp"
@@ -11,6 +12,7 @@
 #include "util.hpp"
 
 #include <cstdlib>
+#include <cstdio>
 
 #include <iostream>
 #include <string>
@@ -23,7 +25,7 @@ namespace fmisql::test {
 /**
  * @brief Executes the given command
  */
-static bool execute_command(std::string_view line) {
+static void execute_command(std::string_view line) {
 	Statement statement = parse_line(line);
 
 	switch (statement.type) {
@@ -57,9 +59,8 @@ static bool execute_command(std::string_view line) {
 		break;
 
 	default:
-		return false;
+		break;
 	}
-	return true;
 }
 
 /**
@@ -72,36 +73,44 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
 		std::cout << "  " << line << '\n';
 	}
 
+	std::remove("fmisql.db");
+	init();
 	for (std::string_view line : lines) {
-		bool result = execute_command(line);
-		if (result) {
+		try {
+			execute_command(line);
 			if (condition == Condition::SHOULD_FAIL) {
 				total++;
 				failed++;
 				std::cout << RED "  FAILED\n" RESET;
+
+				deinit();
+				std::remove("fmisql.db");
 				std::cout << '\n';
 				return;
 			}
-		} else {
-			if (condition == Condition::SHOULD_PASS) {
-				total++;
-				failed++;			
+		} catch (const std::runtime_error &e) {
+			std::cout << e.what() << '\n';
+			if (condition == Condition::SHOULD_FAIL) {
+				passed++;
+				std::cout << CYAN "  failed... OK\n" RESET;
+			} else {
+				failed++;
 				std::cout << RED "  FAILED\n" RESET;
-				std::cout << '\n';
-				return;
 			}
+			total++;
+
+			deinit();
+			std::remove("fmisql.db");
+			std::cout << '\n';
+			return;
 		}
 	}
-	switch (condition) {
-	case Condition::SHOULD_PASS:
-		std::cout << GREEN "  OK\n" RESET;
-		break;
-	case Condition::SHOULD_FAIL:
-		std::cout << CYAN "  failed... OK\n" RESET;
-		break;
-	}
-	passed++;
 	total++;
+	passed++;
+	std::cout << GREEN "  OK\n" RESET;
+
+	deinit();
+	std::remove("fmisql.db");
 	std::cout << '\n';
 }
 	
@@ -110,7 +119,7 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
  */	
 void test_full() {
 	
-	/* Just creating simple tables and showing data about them */ {
+	/* Just creating simple tables and showing info about them */ {
 
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
@@ -120,6 +129,10 @@ void test_full() {
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
 			"TableInfo Sample"
 		});
+
+		test_command_sequence({
+			"TableInfo Sample"
+		}, Condition::SHOULD_FAIL);
 	}
 
 }

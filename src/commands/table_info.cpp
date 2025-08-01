@@ -56,7 +56,7 @@ void table_info(std::string_view name) {
 		}
 	}
 
-	std::cout << "There is no such table!\n";
+	throw std::runtime_error("There is no such table!");
 }
 
 } // namespace fmisql

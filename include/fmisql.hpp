@@ -1,7 +1,7 @@
 #ifndef FMISQL_HPP
 #define FMISQL_HPP
 
-#include "cli/cli.hpp"
+#include "../src/cli/cli.hpp"
 
 
 namespace fmisql {

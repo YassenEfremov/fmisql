@@ -27,38 +27,42 @@ void cli() {
 		} else if (!line.empty()) {
 			Statement statement = parse_line(line);
 
-			switch (statement.type) {
-			case Statement::Type::CREATE_TABLE:
-				create_table(statement.table_name, statement.create_columns,
+			try {
+				switch (statement.type) {
+				case Statement::Type::CREATE_TABLE:
+					create_table(statement.table_name, statement.create_columns,
 					line);
-				break;
-
-			case Statement::Type::DROP_TABLE:
-				// TODO
-				break;
-
-			case Statement::Type::LIST_TABLES:
-				list_tables();
-				break;
-
-			case Statement::Type::TABLE_INFO:
-				table_info(statement.table_name);
-				break;
-
-			case Statement::Type::SELECT:
-				select(statement.select_columns, statement.table_name);
-				break;
-
-			case Statement::Type::REMOVE:
-				// TODO
-				break;
-
-			case Statement::Type::INSERT:
-				insert(statement.table_name, statement.insert_rows);
-				break;
-
-			default:
-				break;
+					break;
+					
+				case Statement::Type::DROP_TABLE:
+					// TODO
+					break;
+					
+				case Statement::Type::LIST_TABLES:
+					list_tables();
+					break;
+					
+				case Statement::Type::TABLE_INFO:
+					table_info(statement.table_name);
+					break;
+					
+				case Statement::Type::SELECT:
+					select(statement.select_columns, statement.table_name);
+					break;
+					
+				case Statement::Type::REMOVE:
+					// TODO
+					break;
+					
+				case Statement::Type::INSERT:
+					insert(statement.table_name, statement.insert_rows);
+					break;
+					
+				default:
+					break;
+				}
+			} catch (const std::runtime_error &e) {
+				std::cout << e.what() << '\n';
 			}
 		}
 	}
