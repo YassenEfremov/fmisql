@@ -13,6 +13,7 @@ void init() {
 
 void deinit() {
 	Pager::deinit();
+	BplusTree::delete_all_trees();
 }
 
 } // namespace fmisql

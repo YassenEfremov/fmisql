@@ -192,6 +192,7 @@ public:
 
     static BplusTree &get_table(std::uint32_t page_number);
     static BplusTree &get_schema();
+    static void delete_all_trees();
 
     /**
      * @brief Returns the root page number of the B+ tree.

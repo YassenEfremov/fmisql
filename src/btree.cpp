@@ -297,6 +297,13 @@ BplusTree &BplusTree::get_schema() {
 	return get_table(0);
 }
 
+void BplusTree::delete_all_trees() {
+	for (auto page_and_tree : BplusTrees) {
+		delete page_and_tree.second;
+	}
+	BplusTrees.clear();
+}
+
 std::uint32_t BplusTree::get_root_page() const { return this->root_page; }
 std::size_t BplusTree::get_value_size() const { return std::size_t(); }
 
