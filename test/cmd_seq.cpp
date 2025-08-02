@@ -153,6 +153,16 @@ void test_full() {
 		}, Condition::SHOULD_FAIL);
 	}
 
+	/* Text big row size */ {
+	
+		// temporary while we implement overflow pages
+		test_command_sequence({
+			"CreateTable Sample (A:String,B:String,C:String,D:String,E:String,F:String,G:String,H:String,I:String,J:String,K:String,L:String,M:String,N:String,O:String)"
+		});
+		test_command_sequence({
+			"CreateTable Sample (A:String,B:String,C:String,D:String,E:String,F:String,G:String,H:String,I:String,J:String,K:String,L:String,M:String,N:String,O:String,P:String)"
+		}, Condition::SHOULD_FAIL);
+	}
 }
 
 } // namespace fmisql::test

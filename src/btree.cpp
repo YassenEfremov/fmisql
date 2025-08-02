@@ -360,6 +360,9 @@ BplusTree::BplusTree(const std::vector<sql_types::Column> &columns)
 			break;
 		}	
 	}
+	if (value_size > page_size - 1 - 4 - 4 - 4) {
+		throw std::runtime_error("TODO: overflow pages");
+	}
 	this->value_size = value_size;
 }
 
