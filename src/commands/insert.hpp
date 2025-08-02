@@ -9,7 +9,7 @@
 
 namespace fmisql {
 
-void insert(std::string_view table_name, const std::vector<sql_types::ExampleRow> rows);
+void insert(std::string_view table_name, const std::vector<std::vector<sql_types::Value>> &rows);
 
 } // namespace fmisql
 

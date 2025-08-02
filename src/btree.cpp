@@ -305,7 +305,8 @@ void BplusTree::delete_all_trees() {
 }
 
 std::uint32_t BplusTree::get_root_page() const { return this->root_page; }
-std::size_t BplusTree::get_value_size() const { return std::size_t(); }
+std::size_t BplusTree::get_value_size() const { return this->value_size; }
+std::uint32_t BplusTree::get_cell_count() const { return this->cell_count; }
 
 void BplusTree::insert(std::uint32_t key, void *value) {
 
@@ -321,11 +322,6 @@ void BplusTree::insert(std::uint32_t key, void *value) {
 
 	this->cell_count++;
 	*(std::uint32_t *)(((std::uint8_t *)node.data) + 1) = this->cell_count;
-}
-
-std::uint32_t BplusTree::get_cell_count() const {
-	Node node{ Pager::get_page(this->root_page) };
-	return *(std::uint32_t *)(((std::uint8_t *)node.data) + 1);
 }
 
 void *BplusTree::get_cell_value(std::size_t i) {
@@ -374,7 +370,7 @@ BplusTree::BplusTree(std::uint32_t root_page)
 	
 	Node node{ Pager::get_page(this->root_page) };
 
-	this->cell_count = this->get_cell_count();
+	this->cell_count = *(std::uint32_t *)(((std::uint8_t *)node.data) + 1);
 
 	if (root_page == 0) {
 		// special case - load schema B+ Tree

@@ -131,7 +131,7 @@ void test_full() {
 		});
 	}
 	
-	/* Just creating simple tables and showing info about them */ {
+	/* Creating simple tables and showing info about them */ {
 
 		// correct commands
 		test_command_sequence({
@@ -162,6 +162,27 @@ void test_full() {
 		test_command_sequence({
 			"CreateTable Sample (A:String,B:String,C:String,D:String,E:String,F:String,G:String,H:String,I:String,J:String,K:String,L:String,M:String,N:String,O:String,P:String)"
 		}, Condition::SHOULD_FAIL);
+	}
+
+	/* Inserting into tables */ {
+
+		// correct commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(15, \"Test message\", 120)}",
+			"TableInfo Sample"
+		});
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
+		});
+
+		// wrong commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
+		}, Condition::SHOULD_FAIL);
+		
 	}
 }
 

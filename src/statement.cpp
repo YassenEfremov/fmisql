@@ -10,7 +10,7 @@ Statement::Statement(
 	std::string_view table_name,
     const std::vector<sql_types::Column> &create_columns,
     const std::vector<std::string_view> &select_columns,
-	const std::vector<sql_types::ExampleRow> &insert_rows
+	const std::vector<std::vector<sql_types::Value>> &insert_rows
 ) :
 	type(type),
 	table_name(table_name),

@@ -15,7 +15,7 @@
 
 namespace fmisql {
 
-void table_info(std::string_view name) {
+void table_info(std::string_view table_name) {
 
 	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
@@ -24,8 +24,8 @@ void table_info(std::string_view name) {
 	for (int i = 0; i < schema_BplusTree.get_cell_count(); i++) {
 		row.deserialize(schema_BplusTree.get_cell_value(i));
 
-		if (row.table_name == name) {
-			std::cout << "Table " << name << " : ";
+		if (row.table_name == table_name) {
+			std::cout << "Table " << table_name << " : ";
 
 			Statement statement = parse_line(row.original_sql);
 

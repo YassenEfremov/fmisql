@@ -26,19 +26,19 @@ namespace fmisql {
 // CreateTable Sample6 (ID:Int, Name:String, Value:Int)
 // CreateTable Sample7 (ID:Int, Name:String, Value:Int)
 
-void create_table(std::string_view name, const std::vector<sql_types::Column> &columns,
+void create_table(std::string_view table_name, const std::vector<sql_types::Column> &columns,
 	std::string_view original_sql) {
 
 	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
 	BplusTree &table_BplusTree = BplusTree::create(columns);
-	SchemaRow schema_row(name, table_BplusTree.get_root_page(), original_sql);
+	SchemaRow schema_row(table_name, table_BplusTree.get_root_page(), original_sql);
 
 	std::uint8_t buffer[schema_row_size];
 	schema_row.serialize(buffer);
 	schema_BplusTree.insert(schema_row.root_page, buffer);
 
-	std::cout << "Table " << name << " created!\n";
+	std::cout << "Table " << table_name << " created!\n";
 }
 
 } // namespace fmisql

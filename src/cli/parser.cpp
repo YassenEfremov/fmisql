@@ -258,7 +258,7 @@ static std::vector<std::vector<sql_types::Value>> parse_inserts(std::string_view
 	 */
 	consume_string(line, pos, "{");
 
-	std::vector<std::vector<sql_types::Value>> table_inserts;
+	std::vector<std::vector<sql_types::Value>> rows;
 
 	while (line.at(pos) != '}') {
 		/**
@@ -269,7 +269,7 @@ static std::vector<std::vector<sql_types::Value>> parse_inserts(std::string_view
 		skip_spaces(line, pos);
 		consume_string(line, pos, "(");
 
-		std::vector<sql_types::Value> row_values;
+		std::vector<sql_types::Value> row;
 
 		while (line[pos] != ')') {
 			/**
@@ -278,25 +278,25 @@ static std::vector<std::vector<sql_types::Value>> parse_inserts(std::string_view
 			 *
 			 */
 			skip_spaces(line, pos);
-			row_values.push_back(parse_value(line, pos));
+			row.push_back(parse_value(line, pos));
 			skip_spaces(line, pos);
 
 			if (line.at(pos) != ')')
 				consume_string(line, pos, ",");
 		}
 
-		if (row_values.empty())
+		if (row.empty())
 			throw std::runtime_error("empty value");
 
 		consume_string(line, pos, ")");
-		table_inserts.push_back(row_values);
+		rows.push_back(row);
 		skip_spaces(line, pos);
 		if (line.at(pos) != '}')
 			consume_string(line, pos, ",");
 	}
 	consume_string(line, pos, "}");
 
-	return table_inserts;
+	return rows;
 }
 
 /**
@@ -401,10 +401,6 @@ Statement parse_line(std::string_view line) {
 	// TODO: more error handling
 
 	trim(line);
-	if (line.size() > sql_types::max_string_size) {
-		std::cerr << "command too long\n";
-		return Statement(Statement::Type::INVALID);
-	}
 
 	/**
 	 *    <command> ...
@@ -416,6 +412,11 @@ Statement parse_line(std::string_view line) {
 	std::string_view command_name = parse_name(line, pos);
 
 	if (command_name == "CreateTable") {
+		if (line.size() > sql_types::max_string_size) {
+			std::cerr << "command too long\n";
+			return Statement(Statement::Type::INVALID);
+		}
+
 		std::string_view table_name;
 		std::vector<sql_types::Column> table_columns;
 		try {
@@ -635,7 +636,7 @@ Statement parse_line(std::string_view line) {
 
 	} else if (command_name == "Insert") {
 		std::string_view table_name;
-		std::vector<sql_types::ExampleRow> rows;
+		std::vector<std::vector<sql_types::Value>> rows;
 		try {
 			/**
 			 * Insert INTO <table> {(<value>, ...), ...}
@@ -659,7 +660,7 @@ Statement parse_line(std::string_view line) {
 			 *                    pos + next_size
 			 */
 			skip_spaces(line, pos);
-			/*rows =*/ parse_inserts(line, pos);
+			rows = parse_inserts(line, pos);
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";

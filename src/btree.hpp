@@ -205,14 +205,14 @@ public:
     std::size_t get_value_size() const;
 
     /**
-     * @brief Inserts a key-value pair into the B+ tree.
-     */
-    void insert(std::uint32_t key, void *value);
-
-    /**
      * @brief Returns the total number of key-value pairs in the B+ tree.
      */
     std::uint32_t get_cell_count() const;
+
+    /**
+     * @brief Inserts a key-value pair into the B+ tree.
+     */
+    void insert(std::uint32_t key, void *value);
 
     /**
      * @brief Returns the i-th cell value (with respect to insertion order).
