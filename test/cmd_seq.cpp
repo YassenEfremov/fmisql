@@ -186,7 +186,18 @@ void test_full() {
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
 			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
 		}, Condition::SHOULD_FAIL);
-		
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String)",
+			"Insert INTO Sample {(15, \"some text\", 120)}"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String)",
+			"Insert INTO Sample {(12, 1000)}"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String)",
+			"Insert INTO Sample {(\"some more text\", 1000)}"
+		}, Condition::SHOULD_FAIL);
 	}
 }
 
