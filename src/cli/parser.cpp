@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 #include <iostream>
+#include <unordered_set>
 
 
 namespace fmisql {
@@ -175,6 +176,7 @@ static std::vector<sql_types::Column> parse_create_columns(std::string_view line
 	consume_string(line, pos, "(");
 
 	std::vector<sql_types::Column> table_columns;
+	std::unordered_set<std::string> unique_columns;
 
 	while (line.at(pos) != ')') {
 		/**
@@ -225,7 +227,13 @@ static std::vector<sql_types::Column> parse_create_columns(std::string_view line
 		if (table_columns.size() > sql_types::max_string_size) {
 			throw std::runtime_error("maximum column count is " + std::to_string(sql_types::max_string_size));
 		} else {
-			table_columns.push_back(sql_types::Column{column_name, column_type_id});
+			std::string column_str = std::string(column_name) + ':' + std::string(column_type_str);
+			if (unique_columns.find(column_str) == unique_columns.end()) {
+				unique_columns.insert(column_str);
+				table_columns.push_back(sql_types::Column{column_name, column_type_id});
+			} else {
+				throw std::runtime_error("duplicate columns");
+			}
 		}
 	}
 	consume_string(line, pos, ")");
@@ -393,6 +401,10 @@ Statement parse_line(std::string_view line) {
 	// TODO: more error handling
 
 	trim(line);
+	if (line.size() > sql_types::max_string_size) {
+		std::cerr << "command too long\n";
+		return Statement(Statement::Type::INVALID);
+	}
 
 	/**
 	 *    <command> ...

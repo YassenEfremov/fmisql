@@ -107,6 +107,28 @@ void test_parser() {
 		test_command("CreateTable Sample  id : Int , name : String ", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (idInt, name:String)", Condition::SHOULD_FAIL);
 		test_command("CreateTable Sample (id:Int, nameString)", Condition::SHOULD_FAIL);
+
+		// logically wrong commands
+		test_command("CreateTable Sample (name:Strin)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (ID:Int, ID:String)");
+		test_command("CreateTable Sample (ID:Int, ID:String, ID:Date)");
+		test_command("CreateTable Sample (ID:Int, ID:Int)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (ID:Int, ID:String, ID:Int)", Condition::SHOULD_FAIL);
+		test_command("CreateTable Sample (ID:Int, ID:String, ID:String)", Condition::SHOULD_FAIL);
+
+		// command limits
+		test_command(
+			"CreateTable                        Sample               (                        ID         :          Int                     ,         Name         :             String                  ,              Value             :   Int                           )"
+		);
+		test_command(
+			"CreateTable                         Sample               (                        ID         :          Int                     ,         Name         :             String                  ,              Value             :   Int                           )"
+		, Condition::SHOULD_FAIL);
+		test_command(
+			"                   CreateTable                        Sample               (                        ID         :          Int                     ,         Name         :             String                  ,              Value             :   Int                           )                   "
+		);
+		test_command(
+			"                   CreateTable                         Sample               (                        ID         :          Int                     ,         Name         :             String                  ,              Value             :   Int                           )                   "
+		, Condition::SHOULD_FAIL);
 	}
 
 	/* DropTable command */ {
