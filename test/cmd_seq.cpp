@@ -149,6 +149,10 @@ void test_full() {
 
 		// wrong commands
 		test_command_sequence({
+			"CreateTable Sample (Value:Int)",
+			"CreateTable Sample (Value:Int)"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
 			"TableInfo Sample"
 		}, Condition::SHOULD_FAIL);
 	}
