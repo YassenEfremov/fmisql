@@ -78,16 +78,6 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
 	for (std::string_view line : lines) {
 		try {
 			execute_command(line);
-			if (condition == Condition::SHOULD_FAIL) {
-				total++;
-				failed++;
-				std::cout << RED "  FAILED\n" RESET;
-
-				deinit();
-				std::remove("fmisql.db");
-				std::cout << '\n';
-				return;
-			}
 		} catch (const std::runtime_error &e) {
 			std::cout << e.what() << '\n';
 			if (condition == Condition::SHOULD_FAIL) {
@@ -97,18 +87,23 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
 				failed++;
 				std::cout << RED "  FAILED\n" RESET;
 			}
+			
 			total++;
-
 			deinit();
 			std::remove("fmisql.db");
 			std::cout << '\n';
 			return;
 		}
 	}
+	if (condition == Condition::SHOULD_FAIL) {
+		failed++;
+		std::cout << RED "  FAILED\n" RESET;
+	} else {
+		passed++;
+		std::cout << GREEN "  OK\n" RESET;
+	}
+	
 	total++;
-	passed++;
-	std::cout << GREEN "  OK\n" RESET;
-
 	deinit();
 	std::remove("fmisql.db");
 	std::cout << '\n';
@@ -118,9 +113,31 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
  * @brief Tests a lot of possible commands sequences
  */	
 void test_full() {
+
+	/* by requirement */ {
+
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"TableInfo Simple"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"TableInfo Sample",
+			"Insert INTO Sample {(1, \"Test\", 1), (2, \"something else\", 100)}",
+			"Select Name FROM Sample WHERE ID != 5 AND Value < 50",
+			"Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name"
+		});
+	}
 	
 	/* Just creating simple tables and showing info about them */ {
 
+		// correct commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"ListTables"
+		});
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
 			"ListTables"
@@ -130,6 +147,7 @@ void test_full() {
 			"TableInfo Sample"
 		});
 
+		// wrong commands
 		test_command_sequence({
 			"TableInfo Sample"
 		}, Condition::SHOULD_FAIL);

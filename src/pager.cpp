@@ -86,16 +86,14 @@ void Pager::flush(int page_number) {
 
 void Pager::deinit() {
 	for (int i = 0; i < pages.size(); i++) {
-		if (Pager::pages[i] == nullptr) {
-			continue;
+		if (Pager::pages[i] != nullptr) {
+			// TODO: don't write unchanged pages!
+	
+			// std::cout << "debug: writing page\n";
+			Pager::flush(i);
+			delete[] (std::uint8_t *)Pager::pages[i];
+			Pager::pages[i] = nullptr;
 		}
-
-		// TODO: don't write unchanged pages!
-
-		// std::cout << "debug: writing page\n";
-		Pager::flush(i);
-		delete[] (std::uint8_t *)Pager::pages[i];
-		Pager::pages[i] = nullptr;
 	}
 
 	Pager::db_file.close();
