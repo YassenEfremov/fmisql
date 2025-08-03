@@ -11,7 +11,7 @@
 			"program": "${workspaceFolder}/build/fmisql.exe",
 			"args": [],
 			"stopAtEntry": false,
-			"cwd": "${fileDirname}",
+			"cwd": "${workspaceFolder}/build",
 			"environment": [],
 			"console": "integratedTerminal"
 		},
@@ -22,7 +22,7 @@
 			"program": "${workspaceFolder}/build/test.exe",
 			"args": [],
 			"stopAtEntry": false,
-			"cwd": "${fileDirname}",
+			"cwd": "${workspaceFolder}/build",
 			"environment": [],
 			"console": "integratedTerminal"
 		}
