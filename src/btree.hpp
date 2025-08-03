@@ -3,6 +3,7 @@
 
 #include "constants.hpp"
 #include "data_types.hpp"
+#include "schema.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -182,16 +183,60 @@ namespace fmisql {
  *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  */
 
+/**
+ *  Interior format:
+ * 
+ *     0                   1                   2                   3
+ *     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |     type      |                          cell_count          >>
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    <<              |                          right_child         >>
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    <<              |                             value            >>
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    <<              |                              key             >>
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    <<              |                              ...              |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                             value                             |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                              key                              |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *    |                              ...                              |
+ *    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ */
+
 
 /**
  * @brief A class that represents the B+ tree used to store table data.
  */
 class BplusTree {
 public:
+    /**
+     * @brief Creates a new B+ Tree and registers it.
+     */
     static BplusTree &create(const std::vector<sql_types::Column> &columns);
 
+    /**
+     * @brief Returns a registered B+ Tree with the given page number. Throws if
+     *        such a tree doesn't exist.
+     */
     static BplusTree &get_table(std::uint32_t page_number);
+    
+    /**
+     * @brief Returns the registered schema B+ Tree (or creates it if it doesn't
+     *        exist).
+     */
     static BplusTree &get_schema();
+    
+    static SchemaRow get_schema_row_by_table_page(std::uint32_t page_number);
+    
+    static SchemaRow get_schema_row_by_table_name(std::string_view table_name);
+
+    /**
+     * @brief Deletes all registered B+ Trees (but not their pages!)
+     */
     static void delete_all_trees();
 
     /**
@@ -207,17 +252,34 @@ public:
     /**
      * @brief Returns the total number of key-value pairs in the B+ tree.
      */
-    std::uint32_t get_cell_count() const;
+    std::uint32_t get_total_cell_count() const;
 
     /**
      * @brief Inserts a key-value pair into the B+ tree.
      */
     void insert(std::uint32_t key, void *value);
 
-    /**
-     * @brief Returns the i-th cell value (with respect to insertion order).
-     */
-    void *get_cell_value(std::size_t i);
+    class Iterator {
+    public:
+        Iterator(std::uint32_t page_number,
+                 std::uint32_t cell_number,
+                 std::uint32_t value_size);
+
+        Iterator &operator++();
+        bool operator==(const Iterator &other) const;
+        bool operator!=(const Iterator &other) const;
+        void *&operator*();
+        // const void *&operator*() const;
+
+    private:
+        std::uint32_t page_number;
+        std::uint32_t cell_number;
+        std::uint32_t value_size;
+        void *value_buffer; // only because operator* has to return a reference
+    };
+
+    Iterator begin() const;
+    Iterator end() const;
 
 private:
     static std::unordered_map<std::uint32_t, BplusTree *> BplusTrees;
@@ -225,12 +287,51 @@ private:
     BplusTree(const std::vector<sql_types::Column> &columns);
     BplusTree(std::uint32_t page_number);
 
-    struct Node {
+    enum class NodeType {
+        LEAF,
+        INTERIOR
+    };
+
+    class Node {
+    public:
+        Node(int page_number, std::uint32_t value_size);
+        Node(NodeType type, std::uint32_t value_size);
+
+        // common
+        NodeType get_type() const;
+        std::uint32_t get_cell_count() const;
+        std::uint32_t get_page_number() const;
+        std::uint32_t get_value_size() const;
+        void *get_cell(std::size_t i);
+        std::uint32_t get_cell_key(std::size_t i);
+        void *get_cell_value(std::size_t i);
+
+        void set_type(NodeType type);
+        void set_cell_count(std::uint32_t cell_count);
+        void set_value_size(std::uint32_t value_size);
+        void set_cell(std::size_t i, std::uint32_t key, void *value);
+
+        // leaf only
+        std::uint32_t get_next_leaf() const;
+        void set_next_leaf(std::uint32_t next_leaf);
+
+        // interior only
+        std::uint32_t get_right_child() const;
+        void set_right_child(std::uint32_t right_child);
+
+    private:
+        NodeType type;
+        std::uint32_t cell_count;
+        std::uint32_t page_number;
+        std::uint32_t value_size;
         void *data;
     };
 
+    std::uint32_t leaf_insert(std::uint32_t leaf_page_number, std::size_t pos, std::uint32_t key, void *value);
+    std::uint32_t rec_insert(std::uint32_t page_number, std::uint32_t key, void *value);
+
     std::uint32_t root_page;
-    std::uint32_t cell_count;
+    std::uint32_t total_cell_count;
     std::vector<sql_types::Column> columns;
     std::size_t value_size;
 };

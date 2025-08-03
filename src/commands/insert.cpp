@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <stdexcept>
 #include <variant>
@@ -41,22 +42,23 @@ void insert(std::string_view table_name, const std::vector<std::vector<sql_types
 	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
 	// TODO: use some form of a select statement instead of a loop
-	SchemaRow row("", 0, "");
-	for (int i = 0; i < schema_BplusTree.get_cell_count(); i++) {
-		row.deserialize(schema_BplusTree.get_cell_value(i));
+	SchemaRow row;
+	for (void *cell : schema_BplusTree) {
+		row.deserialize(((std::uint8_t *)cell) + key_size);
 
 		if (row.table_name == table_name) {
 
 			Statement statement = parse_line(row.original_sql);
 
 			BplusTree &table_BplusTree = BplusTree::get_table(row.root_page);
+			std::uint8_t *buffer = new std::uint8_t[table_BplusTree.get_value_size()];
+
 			for (std::vector<sql_types::Value> row : rows) {
 				if (row.size() != statement.create_columns.size())
 					throw std::runtime_error("one or more rows don't match the table they are being inserted into");
 
-				std::uint8_t *buffer = new std::uint8_t[table_BplusTree.get_value_size()];
-				std::size_t offset = 0;
 				// deserialize
+				std::size_t offset = 0;
 				std::size_t i = 0;
 				for (sql_types::Value value : row) {
 					std::visit(overloaded{
@@ -85,10 +87,15 @@ void insert(std::string_view table_name, const std::vector<std::vector<sql_types
 					i++;
 				}
 
-				table_BplusTree.insert(table_BplusTree.get_cell_count(), buffer);
+				table_BplusTree.insert(table_BplusTree.get_total_cell_count(), buffer);
 			}
+
+			delete[] buffer;
+			return;
 		}
 	}
+
+	std::cout << rows.size() << " rows inserted.\n";
 }
 
 } // namespace fmisql

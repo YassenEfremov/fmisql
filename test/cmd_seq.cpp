@@ -178,6 +178,11 @@ void test_full() {
 		});
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"asd\", 12), (2, \"asd\", 12), (3, \"asd\", 12), (4, \"asd\", 12), (5, \"ddd\", 5)}",
+			"TableInfo Sample"
+		});
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
 			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
 		});
 
@@ -198,6 +203,38 @@ void test_full() {
 			"CreateTable Sample (ID:Int, Name:String)",
 			"Insert INTO Sample {(\"some more text\", 1000)}"
 		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, n:Int)",
+			"Insert INTO Sample {(123, 1000), (234, \"asd\")}"
+		}, Condition::SHOULD_FAIL);
+	}
+
+	/* Creating more than 7 tables (a single page can hold only that many rows), thus causing a split */ {
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)"
+		});
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)"
+		});
 	}
 }
 

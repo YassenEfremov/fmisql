@@ -31,10 +31,9 @@ void create_table(std::string_view table_name, const std::vector<sql_types::Colu
 
 	BplusTree &schema_BplusTree = BplusTree::get_schema();
 
-	// TODO: use some form of a select statement instead of a loop
-	SchemaRow row("", 0, "");
-	for (int i = 0; i < schema_BplusTree.get_cell_count(); i++) {
-		row.deserialize(schema_BplusTree.get_cell_value(i));
+	SchemaRow row;
+	for (void *cell : schema_BplusTree) {
+		row.deserialize(((std::uint8_t *)cell) + key_size);
 
 		if (row.table_name == table_name) {
 			throw std::runtime_error("Table " + std::string(table_name) + " already exists!");

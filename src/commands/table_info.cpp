@@ -17,46 +17,33 @@ namespace fmisql {
 
 void table_info(std::string_view table_name) {
 
-	BplusTree &schema_BplusTree = BplusTree::get_schema();
+	SchemaRow schema_row = BplusTree::get_schema_row_by_table_name(table_name);
+	Statement statement = parse_line(schema_row.original_sql);
+	std::cout << "Table " << table_name << " : (";
 
-	// TODO: use some form of a select statement instead of a loop
-	SchemaRow row("", 0, "");
-	for (int i = 0; i < schema_BplusTree.get_cell_count(); i++) {
-		row.deserialize(schema_BplusTree.get_cell_value(i));
-
-		if (row.table_name == table_name) {
-			std::cout << "Table " << table_name << " : ";
-
-			Statement statement = parse_line(row.original_sql);
-
-			std::cout << '(';
-			for (int i = 0; i < statement.create_columns.size(); i++) {
-				std::cout << statement.create_columns[i].name << ':';
-				switch (statement.create_columns[i].type_id) {
-				case sql_types::Id::INT:
-					std::cout << "Int";
-					break;
-				case sql_types::Id::STRING:
-					std::cout << "String";
-					break;
-				case sql_types::Id::DATE:
-					break;
-				}
-				if (i != statement.create_columns.size() - 1) std::cout << ", ";
-			}
-			std::cout << ")\n";
-
-			BplusTree &table_BplusTree = BplusTree::get_table(row.root_page);
-			std::uint32_t row_count = table_BplusTree.get_cell_count();
-			std::cout << "Total " << row_count << " rows ("
-				<< static_cast<double>(row_count * table_BplusTree.get_value_size())/1000
-				<< " KB data) in the table\n";
-
-			return;
+	for (int i = 0; i < statement.create_columns.size(); i++) {
+		std::cout << statement.create_columns[i].name << ':';
+		switch (statement.create_columns[i].type_id) {
+		case sql_types::Id::INT:
+			std::cout << "Int";
+			break;
+		case sql_types::Id::STRING:
+			std::cout << "String";
+			break;
+		case sql_types::Id::DATE:
+			break;
 		}
+		if (i != statement.create_columns.size() - 1) std::cout << ", ";
 	}
+	std::cout << ")\n";
 
-	throw std::runtime_error("There is no such table!");
+	BplusTree &table_BplusTree = BplusTree::get_table(schema_row.root_page);
+	std::uint32_t row_count = table_BplusTree.get_total_cell_count();
+	std::cout << "Total " << row_count << " rows ("
+		<< static_cast<double>(row_count * table_BplusTree.get_value_size())/1000
+		<< " KB data) in the table\n";
+
+	// throw std::runtime_error("There is no such table!");
 }
 
 } // namespace fmisql
