@@ -425,7 +425,7 @@ BplusTree::Iterator BplusTree::begin() const {
 
 	switch (node.get_type()) {
 	case NodeType::LEAF:
-		start_page = 0;
+		start_page = this->root_page;
 		break;
 
 	case NodeType::INTERIOR: {

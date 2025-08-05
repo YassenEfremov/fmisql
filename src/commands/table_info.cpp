@@ -1,13 +1,10 @@
 #include "table_info.hpp"
 
 #include "../btree.hpp"
-#include "../constants.hpp"
-#include "../data_types.hpp"
 #include "../cli/parser.hpp"
-#include "../statement.hpp"
+#include "../data_types.hpp"
 #include "../schema.hpp"
-
-#include <cstdint>
+#include "../statement.hpp"
 
 #include <iostream>
 #include <string_view>
@@ -31,6 +28,7 @@ void table_info(std::string_view table_name) {
 			std::cout << "String";
 			break;
 		case sql_types::Id::DATE:
+			std::cout << "Date";
 			break;
 		}
 		if (i != statement.create_columns.size() - 1) std::cout << ", ";

@@ -7,7 +7,7 @@
 
 namespace fmisql {
 
-void select(const std::vector<std::string_view> &columns,
+void select(const std::vector<std::string_view> &column_names,
             std::string_view table_name);
 
 } // namespace fmisql

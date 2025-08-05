@@ -2,6 +2,9 @@
 
 #include "data_types.hpp"
 
+#include <string_view>
+#include <vector>
+
 
 namespace fmisql {
 

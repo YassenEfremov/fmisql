@@ -308,7 +308,7 @@ static std::vector<std::string_view> parse_select_columns(std::string_view line,
 
 	if (line.at(pos) == '*') {
 		// an empty vector means "all columns", because we can't know
-		// what columns the table has without checking the schema/pager
+		// what columns the table has without checking the schema
 		pos++;
 		return {};
 	}

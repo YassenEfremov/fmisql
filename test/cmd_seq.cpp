@@ -321,8 +321,8 @@ void test_command_sequences() {
 
 		// etc... every 4 new tables cause a leaf split
 
-		// I haven't tested internal node splits using the CreateTable command
-		// because that would require creating like 2040 tables.
+		// I haven't tested internal node splitting using the CreateTable command
+		// because that would require creating something like 2040 tables.
 		// It could be automated, but I'm also lazy.
 	}
 

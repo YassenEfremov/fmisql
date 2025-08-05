@@ -1,7 +1,10 @@
 #include "select.hpp"
 
 #include "../btree.hpp"
+#include "../cli/parser.hpp"
 #include "../data_types.hpp"
+#include "../schema.hpp"
+#include "../statement.hpp"
 
 #include <cstring>
 
@@ -24,44 +27,74 @@ static bool columns_contain(const std::vector<std::string_view> &columns,
 	return false;
 }
 
-void select(const std::vector<std::string_view> &columns,
+void select(const std::vector<std::string_view> &column_names,
             std::string_view table_name) {
 
-	// Node node(Node::number_of_table(table_name));
-	// int leaf_number = node.start_leaf();
-	// // std::cout << "start leaf: " << leaf_number << '\n';
-	// int rows_selected = 0;
+	SchemaRow schema_row = BplusTree::get_schema_row_by_table_name(table_name);
+	Statement statement = parse_line(schema_row.original_sql);
+	BplusTree &table_BplusTree = BplusTree::get_table(schema_row.root_page);
+	std::uint8_t *buffer = new std::uint8_t[table_BplusTree.get_value_size()];
+	int rows_selected = 0;
 
-	// std::cout << '|';
-	// for (std::string_view column : columns) {
-	// 	std::cout << ' ' << column << " |";
-	// }
-	// std::cout << '\n';
-	// std::cout << "------------------\n";
+	std::cout << '|';
+	if (column_names.empty()) {
+		for (sql_types::Column column : statement.create_columns) {
+			std::cout << ' ' << column.name << " |";
+		}
+	} else {
+		for (std::string_view column : column_names) {
+			std::cout << ' ' << column << " |";
+		}
+	}
+	std::cout << "\n------------------\n";
 
-	// while (leaf_number) {
-	// 	Node leaf(leaf_number);
-	// 	sql_types::ExampleRow row;
-	// 	for (int i = 0; i < *leaf.pair_count(); i++, rows_selected++) {
-	// 		row.deserialize(leaf.pair_value(i));
 
-	// 		std::cout << '|';
-	// 		if (columns_contain(columns, "ID")) {
-	// 			std::cout << ' ' << row.ID << " |";
-	// 		}
-	// 		if (columns_contain(columns, "Name")) {
-	// 			std::cout << " \"" << row.Name << "\" |";
-	// 		}
-	// 		if (columns_contain(columns, "Value")) {
-	// 			std::cout << ' ' << row.Value << " |";
-	// 		}
-	// 		std::cout << '\n';
-	// 	}
-	// 	leaf_number = *leaf.next_leaf();
-	// 	// std::cout << "next leaf: " << leaf_number << '\n';
-	// }
 
-	// std::cout << "Total " << rows_selected << " row/s selected\n";
+	for (void *cell : table_BplusTree) {
+
+		std::uint32_t offset = 0;
+		int i = 0;
+		for (sql_types::Column column : statement.create_columns) {
+			if (column_names.empty() || (i < column_names.size() && column.name == column_names[i])) {
+				switch (column.type_id) {
+				case sql_types::Id::INT:
+					std::cout << *(sql_types::Int *)(((std::uint8_t *)cell) + key_size + offset) << "    ";
+					offset += sql_types::max_int_size;
+					break;
+				case sql_types::Id::STRING:
+					std::cout << std::string_view((char *)(((std::uint8_t *)cell) + key_size + offset), sql_types::max_string_size) << "    ";
+					offset += sql_types::max_string_size;
+					break;
+				case sql_types::Id::DATE:
+					// TODO
+					offset += sql_types::max_date_size;
+					break;
+				}
+				i++;
+			}
+		}
+
+		// row.deserialize(cell);
+		// for () {
+		// 	std::cout << '|';
+		// 	if (columns_contain(columns, "ID")) {
+		// 		std::cout << ' ' << row.ID << " |";
+		// 	}
+		// 	if (columns_contain(columns, "Name")) {
+		// 		std::cout << " \"" << row.Name << "\" |";
+		// 	}
+		// 	if (columns_contain(columns, "Value")) {
+		// 		std::cout << ' ' << row.Value << " |";
+		// 	}
+		// 	std::cout << '\n';
+		// }
+		rows_selected++;
+		std::cout << '\n';
+	}
+
+	delete[] buffer;
+
+	std::cout << "Total " << rows_selected << " rows selected\n";
 }
 
 } // namespace fmisql
