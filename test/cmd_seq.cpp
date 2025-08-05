@@ -108,11 +108,81 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
 	std::remove("fmisql.db");
 	std::cout << '\n';
 }
+
+/**
+ * @brief Executes `setup_lines` once and `repeat_line` `n` times.
+ *        Default condition is SHOULD_PASS.
+ */
+void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
+                                   std::string_view repeat_line,
+                                   std::size_t n,
+	                               Condition condition) {
+	std::cout << "Testing command sequence:\n  Setup:\n";
+	for (std::string_view line : setup_lines) {
+		std::cout << "    " << line << '\n';
+	}
+	std::cout << "  Repeating x" << n << " times:\n    " << repeat_line << '\n';
+
+	std::remove("fmisql.db");
+	init();
+	for (std::string_view line : setup_lines) {
+		try {
+			execute_command(line);
+		} catch (const std::runtime_error &e) {
+			std::cout << e.what() << '\n';
+			if (condition == Condition::SHOULD_FAIL) {
+				passed++;
+				std::cout << CYAN "  failed... OK\n" RESET;
+			} else {
+				failed++;
+				std::cout << RED "  FAILED\n" RESET;
+			}
+			
+			total++;
+			deinit();
+			std::remove("fmisql.db");
+			std::cout << '\n';
+			return;
+		}
+	}
+	for (int i = 0; i < n; i++) {
+		try {
+			execute_command(repeat_line);
+		} catch (const std::runtime_error &e) {
+			std::cout << e.what() << '\n';
+			if (condition == Condition::SHOULD_FAIL) {
+				passed++;
+				std::cout << CYAN "  failed... OK\n" RESET;
+			} else {
+				failed++;
+				std::cout << RED "  FAILED\n" RESET;
+			}
+			
+			total++;
+			deinit();
+			std::remove("fmisql.db");
+			std::cout << '\n';
+			return;
+		}
+	}
+	if (condition == Condition::SHOULD_FAIL) {
+		failed++;
+		std::cout << RED "  FAILED\n" RESET;
+	} else {
+		passed++;
+		std::cout << GREEN "  OK\n" RESET;
+	}
+	
+	total++;
+	deinit();
+	std::remove("fmisql.db");
+	std::cout << '\n';
+}
 	
 /**
  * @brief Tests a lot of possible commands sequences
  */	
-void test_full() {
+void test_command_sequences() {
 
 	/* by requirement */ {
 
@@ -161,10 +231,15 @@ void test_full() {
 	
 		// temporary while we implement overflow pages
 		test_command_sequence({
-			"CreateTable Sample (A:String,B:String,C:String,D:String,E:String,F:String,G:String,H:String,I:String,J:String,K:String,L:String,M:String,N:String,O:String)"
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
 		});
 		test_command_sequence({
-			"CreateTable Sample (A:String,B:String,C:String,D:String,E:String,F:String,G:String,H:String,I:String,J:String,K:String,L:String,M:String,N:String,O:String,P:String)"
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String,"
+								"P:String)"
 		}, Condition::SHOULD_FAIL);
 	}
 
@@ -183,13 +258,19 @@ void test_full() {
 		});
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
-			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
+			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+			                           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+									   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+									   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
 		});
 
 		// wrong commands
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
-			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
+			"Insert INTO Sample {(15, \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+			                           "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+									   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+									   "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", 120)}"
 		}, Condition::SHOULD_FAIL);
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String)",
@@ -209,7 +290,9 @@ void test_full() {
 		}, Condition::SHOULD_FAIL);
 	}
 
-	/* Creating more than 7 tables (a single page can hold only that many rows), thus causing a split */ {
+	/* Creating a lot of tables in order to cause node splits */ {
+
+		// creating 8 tables causes 1 leaf split
 		test_command_sequence({
 			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
@@ -220,6 +303,7 @@ void test_full() {
 			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)"
 		});
+		// creating 12 tables causes 2 leaf splits
 		test_command_sequence({
 			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
@@ -229,12 +313,45 @@ void test_full() {
 			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
-
 			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)"
 		});
+
+		// etc... every 4 new tables cause a leaf split
+
+		// I haven't tested internal node splits using the CreateTable command
+		// because that would require creating like 2040 tables.
+		// It could be automated, but I'm also lazy.
+	}
+
+	/* Inserting a lot of rows in order to cause node splits */ {
+
+		// The page is 4096 bytes and excluding the header, the space for rows is
+		//   4096 - 9 = 4087 bytes
+		// Therefore the maximum size for a row that contains only strings is
+		//   4087 / (4 + 256) = ~15.7
+		// So a table with 15 string columns would require one row to fill an entire page.
+		// 512 rows in such a table would cause an interior node split.
+		test_command_setup_and_repeat(
+			{
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			511
+		);
+		test_command_setup_and_repeat(
+			{
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			512
+		);
 	}
 }
 

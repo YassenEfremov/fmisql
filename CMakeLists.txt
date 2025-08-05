@@ -8,7 +8,7 @@ project(fmisql
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_EXTENSION FALSE)
+set(CMAKE_CXX_EXTENSIONS FALSE)
 
 add_executable(fmisql
 	src/cli/cli.cpp
@@ -49,7 +49,7 @@ add_executable(test
 )
 
 if (MSVC)
-	# compliant by default?
+	# more compliant by default?
 else()
 	target_compile_options(fmisql PRIVATE -pedantic-errors -g)
 endif()

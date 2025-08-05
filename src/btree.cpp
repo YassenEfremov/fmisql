@@ -728,7 +728,7 @@ BplusTree::Node::Node(int page_number, std::uint32_t value_size)
 		this->value_size = interior_value_size;
 		break;
 	}
-	this->cell_count = *(((std::uint8_t *)this->data) + type_size);
+	this->cell_count = *(std::uint32_t *)(((std::uint8_t *)this->data) + type_size);
 }
 
 BplusTree::Node::Node(NodeType type, std::uint32_t value_size)

@@ -21,8 +21,8 @@ using String = std::string_view;
 using Date = std::time_t;
 
 constexpr std::size_t max_string_size = 256;
-constexpr std::size_t max_int_size = sizeof Int;
-constexpr std::size_t max_date_size = sizeof Date;
+constexpr std::size_t max_int_size = sizeof(Int);
+constexpr std::size_t max_date_size = sizeof(Date);
 
 using Value = std::variant<Int, String, Date>;
 

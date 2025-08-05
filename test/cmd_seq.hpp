@@ -11,7 +11,12 @@ namespace fmisql::test {
 
 extern void test_command_sequence(std::vector<std::string_view> lines, Condition condition = Condition::SHOULD_PASS);
 
-extern void test_full();
+void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
+                                   std::string_view repeat_line,
+                                   std::size_t n,
+	                               Condition condition = Condition::SHOULD_PASS);
+
+extern void test_command_sequences();
 
 } // namespace fmisql::test
 
