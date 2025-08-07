@@ -17,80 +17,6 @@
 
 namespace fmisql {
 
-// Node::Node(sql_types::Int number, std::uint32_t value_size) : page(number) {
-// 	this->data = Pager::get_page(number);
-// 	if (value_size != 0) *this->value_size() = value_size;
-
-// 	this->pair_size = leaf_node_key_size + *this->value_size();
-// 	this->max_pairs = leaf_node_space_for_cells / this->pair_size;
-
-// 	this->leaf_node_right_split_count = (this->max_pairs + 1) / 2;
-// 	this->leaf_node_left_split_count = this->max_pairs + 1 - this->leaf_node_right_split_count;
-// }
-
-// sql_types::Int Node::number_of_table(std::string_view name) {
-
-// 	Node node(0, schema_row_size);
-
-// 	SchemaRow row("", 0, "");
-// 	for (int i = 0; i < *node.pair_count(); i++) {
-// 		row.deserialize(node.pair_value(i));
-// 		if (row.table_name == name) {
-// 			return row.root_page;
-// 		}
-// 	}
-
-// 	throw std::runtime_error("There is no such table!");
-// }
-
-// std::uint8_t *Node::is_root() {
-// 	return (std::uint8_t *)this->data + is_root_offset;
-// }
-
-// std::uint32_t *Node::pair_count() {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + leaf_node_num_cells_offset);
-// }
-
-// Node::Type Node::get_type() {
-// 	return (Node::Type)*((std::uint8_t *)this->data + node_type_offset);
-// }
-
-// void Node::set_type(Type type) {
-// 	*((std::uint8_t *)this->data + node_type_offset) = (std::uint8_t)type;
-// }
-
-// void *Node::leaf_pair(int pair_index) {
-// 	return (std::uint8_t *)this->data + leaf_node_header_size + pair_index * this->pair_size;
-// }
-
-// std::uint32_t *Node::pair_key(int pair_index) {
-// 	return (std::uint32_t *)this->leaf_pair(pair_index);
-// }
-
-// void *Node::pair_value(int pair_index) {
-// 	return (std::uint8_t *)this->leaf_pair(pair_index) + leaf_node_key_size;
-// }
-
-// std::uint32_t *Node::value_size() {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + leaf_node_value_size_offset);
-// }
-
-// std::uint32_t *Node::next_leaf() {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + leaf_node_next_leaf_offset);
-// }
-
-// std::uint32_t *Node::key_count() {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + internal_node_num_keys_offset);
-// }
-
-// std::uint32_t *Node::right_child() {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + internal_node_right_child_offset);
-// }
-
-// std::uint32_t *Node::internal_pair(int pos) {
-// 	return (std::uint32_t *)((std::uint8_t *)this->data + internal_node_header_size + pos * internal_node_cell_size);
-// }
-
 // std::uint32_t *Node::child(int pos) {
 // 	std::uint32_t key_count = *this->key_count();
 // 	if (pos > key_count) {
@@ -657,10 +583,10 @@ std::uint32_t BplusTree::rec_insert(std::uint32_t page_number, std::uint32_t key
 			mid_pos = (left_pos + right_pos) / 2;
 		}
 
-		std::uint32_t child_page_number = mid_pos >= node.get_cell_count() ?
-			node.get_right_child()
+		std::uint32_t child_page_number = mid_pos < node.get_cell_count() ?
+			*(std::uint32_t *)node.get_cell_value(mid_pos)
 			:
-			*(std::uint32_t *)node.get_cell_value(mid_pos);
+			node.get_right_child();
 
 		std::uint32_t new_leaf_node_page_number = rec_insert(child_page_number, key, value);
 
@@ -672,35 +598,26 @@ std::uint32_t BplusTree::rec_insert(std::uint32_t page_number, std::uint32_t key
 			if (cell_start + key_size + interior_value_size > page_size) {
 				throw std::runtime_error("TODO: split interior node");
 				// std::cout << "splitting INTERIOR...\n";
+
+
 				// return new_interior_node_number;
 
 			} else {
-				Node child_node(child_page_number, this->value_size);
-				std::uint32_t child_node_max_key = child_node.get_cell_key(child_node.get_cell_count() - 1);
-				
-				std::uint32_t left_pos = 0;
-				std::uint32_t right_pos = node.get_cell_count();
-				std::uint32_t mid_pos = (left_pos + right_pos) / 2;
-
-				while (left_pos != right_pos) {
-					if (child_node_max_key <= node.get_cell_key(mid_pos)) {
-						right_pos = mid_pos;
-					} else {
-						left_pos = mid_pos + 1;
-					}
-					mid_pos = (left_pos + right_pos) / 2;
-				}
+				Node new_leaf_node(new_leaf_node_page_number, this->value_size);
+				std::uint32_t new_leaf_node_max_key = new_leaf_node.get_cell_key(new_leaf_node.get_cell_count() - 1);
 
 				if (mid_pos < node.get_cell_count()) {
 					for (int j = node.get_cell_count(); j > mid_pos; j--) {
 						node.set_cell(j, node.get_cell_key(j - 1), node.get_cell_value(j - 1));
 					}
+					node.set_cell(mid_pos, new_leaf_node_max_key, &new_leaf_node_page_number);
 				} else {
-					// right child handling
+					Node right_child(node.get_right_child(), this->value_size);
+					std::uint32_t right_child_page_number = node.get_right_child();
+
+					node.set_cell(mid_pos, right_child.get_cell_key(right_child.get_cell_count() - 1), &right_child_page_number);
 					node.set_right_child(new_leaf_node_page_number);
 				}
-
-				node.set_cell(mid_pos, child_node_max_key, &child_page_number);
 				node.set_cell_count(node.get_cell_count() + 1);
 			}
 		}
