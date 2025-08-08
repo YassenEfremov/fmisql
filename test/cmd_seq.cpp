@@ -352,6 +352,27 @@ void test_command_sequences() {
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
 			512
 		);
+		test_command_setup_and_repeat(
+			{
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			600
+		);
+
+		// 256 more rows will cause another interior node split, so 768 total
+		// which will require an insertion into the root note
+		test_command_setup_and_repeat(
+			{
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			768
+		);
 	}
 }
 

@@ -5,12 +5,12 @@
 #include "data_types.hpp"
 #include "schema.hpp"
 
+#include <string_view>
+#include <unordered_map>
+#include <vector>
+
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
-
-#include <vector>
-#include <unordered_map>
 
 
 namespace fmisql {
@@ -327,7 +327,8 @@ private:
         void *data;
     };
 
-    std::uint32_t leaf_insert(std::uint32_t leaf_page_number, std::size_t pos, std::uint32_t key, void *value);
+    std::uint32_t leaf_insert(Node &node, std::size_t pos, std::uint32_t key, void *value);
+    std::uint32_t interior_insert(Node &node, std::size_t pos, std::uint32_t key, std::uint32_t value);
     std::uint32_t rec_insert(std::uint32_t page_number, std::uint32_t key, void *value);
 
     std::uint32_t root_page;
