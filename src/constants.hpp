@@ -25,6 +25,9 @@ constexpr std::uint32_t key_size = sizeof(std::uint32_t);
 
 // leaf only
 constexpr std::uint32_t next_leaf_size = sizeof(std::uint32_t);
+constexpr std::uint32_t leaf_header_size = type_size
+                                            + cell_count_size
+                                            + next_leaf_size;
 
 
 
@@ -34,6 +37,9 @@ constexpr std::uint32_t next_leaf_size = sizeof(std::uint32_t);
 // interior only
 constexpr std::uint32_t right_child_size = sizeof(std::uint32_t);
 constexpr std::uint32_t interior_value_size = sizeof(std::uint32_t);
+constexpr std::uint32_t interior_header_size = type_size
+                                                + cell_count_size
+                                                + right_child_size;
 
 
 

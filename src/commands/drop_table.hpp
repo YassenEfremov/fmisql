@@ -4,7 +4,11 @@
 #include <string_view>
 
 
-void drop_table(std::string_view name);
+namespace fmisql {
+	
+void drop_table(std::string_view table_name);
+	
+} // namespace fmisql
 
 
 #endif // DROP_TABLE_HPP

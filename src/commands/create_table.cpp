@@ -7,24 +7,15 @@
 #include "../statement.hpp"
 #include "../schema.hpp"
 
-#include <cstdint>
-
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <cstdint>
+
 
 namespace fmisql {
-
-// Example create statements:
-// CreateTable Sample (ID:Int, Name:String, Value:Int)
-// CreateTable Sample2 (ID:Int, Name:String, Value:Int)
-// CreateTable Sample3 (ID:Int, Name:String, Value:Int)
-// CreateTable Sample4 (ID:Int, Name:String, Value:Int)
-// CreateTable Sample5 (ID:Int, Name:String, Value:Int)
-// CreateTable Sample6 (ID:Int, Name:String, Value:Int)
-// CreateTable Sample7 (ID:Int, Name:String, Value:Int)
 
 void create_table(std::string_view table_name, const std::vector<sql_types::Column> &columns,
 	std::string_view original_sql) {

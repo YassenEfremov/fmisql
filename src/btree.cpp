@@ -22,9 +22,13 @@ namespace fmisql {
 // }
 
 BplusTree &BplusTree::create(const std::vector<sql_types::Column> &columns) {
-	BplusTree *table_BplusTree = new BplusTree(columns);
-	BplusTrees.insert({table_BplusTree->get_root_page(), table_BplusTree});
-	return *table_BplusTree;
+	BplusTree table_BplusTree(columns);
+	BplusTrees.insert({table_BplusTree.get_root_page(), table_BplusTree});
+	return BplusTrees.at(table_BplusTree.get_root_page());
+}
+
+void BplusTree::drop(std::uint32_t page_number) {
+	BplusTrees.erase(page_number);
 }
 
 BplusTree &BplusTree::get_table(std::uint32_t root_page) {
@@ -38,17 +42,17 @@ BplusTree &BplusTree::get_table(std::uint32_t root_page) {
 					sql_types::Column{"", sql_types::Id::STRING},
 				});
 			} else {
-				throw std::runtime_error("three with root page " + std::to_string(root_page) + " doesn't exist");
+				throw std::runtime_error("B+ Tree with root page " + std::to_string(root_page) + " doesn't exist");
 			}
 		} else {
 			if (root_page != 0 && root_page >= Pager::pages.size()) {
-				throw std::runtime_error("three with root page " + std::to_string(root_page) + " doesn't exist");
+				throw std::runtime_error("B+ Tree with root page " + std::to_string(root_page) + " doesn't exist");
 			}
-			BplusTrees.insert({root_page, new BplusTree(root_page)});
+			BplusTrees.insert({root_page, BplusTree(root_page)});
 		}
 	}
 
-	return *BplusTrees.at(root_page);
+	return BplusTrees.at(root_page);
 }
 
 BplusTree &BplusTree::get_schema() {
@@ -90,9 +94,6 @@ SchemaRow BplusTree::get_schema_row_by_table_name(std::string_view table_name) {
 }
 
 void BplusTree::delete_all_trees() {
-	for (auto page_and_tree : BplusTrees) {
-		delete page_and_tree.second;
-	}
 	BplusTrees.clear();
 }
 
@@ -103,6 +104,11 @@ std::uint32_t BplusTree::get_total_cell_count() const { return this->total_cell_
 void BplusTree::insert(std::uint32_t key, void *value) {
 	rec_insert(this->root_page, key, value);
 	this->total_cell_count++;
+}
+
+void BplusTree::remove(std::uint32_t key) {
+	rec_remove(this->root_page, key);
+	this->total_cell_count--;
 }
 
 BplusTree::Iterator::Iterator(std::uint32_t page_number,
@@ -187,7 +193,7 @@ BplusTree::Iterator BplusTree::end() const {
 
 // private stuff
 
-std::unordered_map<std::uint32_t, BplusTree *> BplusTree::BplusTrees;
+std::unordered_map<std::uint32_t, BplusTree> BplusTree::BplusTrees;
 
 BplusTree::BplusTree(const std::vector<sql_types::Column> &columns)
 	: total_cell_count(0),
@@ -288,10 +294,8 @@ BplusTree::BplusTree(std::uint32_t root_page)
 
 std::uint32_t BplusTree::leaf_insert(Node &node, std::size_t pos, std::uint32_t key, void *value) {
 
-	std::uint32_t cell_start = type_size
-	                         + cell_count_size
-							 + next_leaf_size
-							 + node.get_cell_count() * (key_size + this->value_size);
+	std::uint32_t cell_start = leaf_header_size
+								+ node.get_cell_count() * (key_size + this->value_size);
 	if (cell_start + key_size + this->value_size > page_size) {
 		std::cout << "splitting LEAF...\n";
 		
@@ -355,10 +359,8 @@ std::uint32_t BplusTree::leaf_insert(Node &node, std::size_t pos, std::uint32_t 
 
 std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint32_t key, std::uint32_t value) {
 
-	std::uint32_t cell_start = type_size
-								+ cell_count_size
-								+ right_child_size
-								+ node.get_cell_count() * (key_size + interior_value_size);
+	std::uint32_t cell_start = interior_header_size
+								+ node.get_cell_count() * (interior_value_size + key_size);
 	if (cell_start + key_size + interior_value_size > page_size) {
 		std::cout << "splitting INTERIOR...\n";
 
@@ -401,14 +403,14 @@ std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint3
 		}
 
 	} else {
-		Node new_leaf_node(value, this->value_size);
-		std::uint32_t new_leaf_node_max_key = new_leaf_node.get_cell_key(new_leaf_node.get_cell_count() - 1);
+		Node new_node(value, this->value_size);
+		std::uint32_t new_node_max_key = new_node.get_cell_key(new_node.get_cell_count() - 1);
 
 		if (pos < node.get_cell_count()) {
 			for (int j = node.get_cell_count(); j > pos; j--) {
 				node.set_cell(j, node.get_cell_key(j - 1), node.get_cell_value(j - 1));
 			}
-			node.set_cell(pos, new_leaf_node_max_key, &value);
+			node.set_cell(pos, new_node_max_key, &value);
 		} else {
 			Node right_child(node.get_right_child(), this->value_size);
 			std::uint32_t right_child_page_number = node.get_right_child();
@@ -423,7 +425,6 @@ std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint3
 }
 
 std::uint32_t BplusTree::rec_insert(std::uint32_t page_number, std::uint32_t key, void *value) {
-
 	Node node(page_number, this->value_size);
 
 	std::uint32_t left_pos = 0;
@@ -463,6 +464,193 @@ std::uint32_t BplusTree::rec_insert(std::uint32_t page_number, std::uint32_t key
 	default:
 		throw std::runtime_error("invalid node type (how?)");
 	}
+}
+
+BplusTree::RemoveStatus BplusTree::leaf_remove(Node &node, std::size_t pos, std::uint32_t key) {
+
+	std::uint32_t min_cell_count = (((page_size - leaf_header_size) / this->value_size) + 1) / 2;
+	if (node.get_page_number() != this->root_page
+		&& node.get_cell_count() - 1 < min_cell_count) {
+		
+		if (node.get_next_leaf() == 0) {
+			// this is the last leaf node
+			if (pos < node.get_cell_count() - 1) {
+				for (int j = pos; j < node.get_cell_count() - 1; j++) {
+					node.set_cell(j, node.get_cell_key(j + 1), node.get_cell_value(j + 1));
+				}
+			}
+			node.set_cell_count(node.get_cell_count() - 1);
+
+			return RemoveStatus{
+				RemoveStatus::LEFT_SIBLING,
+				0
+			};
+
+		} else {
+			// there is a next leaf node
+			Node next_leaf(node.get_next_leaf(), this->value_size);
+			if (next_leaf.get_cell_count() - 1 < min_cell_count) {
+				// merge with the next leaf node
+				// throw std::runtime_error("TODO merge next leaf");
+				std::cout << "merging LEAF...\n";
+
+				node.set_next_leaf(next_leaf.get_next_leaf());
+				if (pos < node.get_cell_count() - 1) {
+					for (int j = pos; j < node.get_cell_count() - 1; j++) {
+						node.set_cell(j, node.get_cell_key(j + 1), node.get_cell_value(j + 1));
+					}
+				}
+				for (int j = 0; j < next_leaf.get_cell_count(); j++) {
+					node.set_cell(node.get_cell_count() - 1 + j, next_leaf.get_cell_key(j), next_leaf.get_cell_value(j));
+				}
+				node.set_cell_count(node.get_cell_count() - 1 + next_leaf.get_cell_count());
+
+				return RemoveStatus{
+					RemoveStatus::MERGED,
+					node.get_cell_key(node.get_cell_count() - 1)
+				};
+
+			} else {
+				// take the smallest key from the next leaf node
+				if (pos < node.get_cell_count() - 1) {
+					for (int j = pos; j < node.get_cell_count() - 1; j++) {
+						node.set_cell(j, node.get_cell_key(j + 1), node.get_cell_value(j + 1));
+					}
+				}
+				node.set_cell(node.get_cell_count() - 1, next_leaf.get_cell_key(0), next_leaf.get_cell_value(0));
+				for (int j = 0; j < next_leaf.get_cell_count() - 1; j++) {
+					next_leaf.set_cell(j, next_leaf.get_cell_key(j + 1), next_leaf.get_cell_value(j + 1));
+				}
+				next_leaf.set_cell_count(next_leaf.get_cell_count() - 1);
+
+				return RemoveStatus{
+					RemoveStatus::TOOK_FROM_RIGHT_SIBLING,
+					node.get_cell_key(node.get_cell_count() - 1)
+				};
+			}
+		}
+
+	} else {
+		if (pos < node.get_cell_count() - 1) {
+			for (int j = pos; j < node.get_cell_count() - 1; j++) {
+				node.set_cell(j, node.get_cell_key(j + 1), node.get_cell_value(j + 1));
+			}
+		}
+		node.set_cell_count(node.get_cell_count() - 1);
+
+		return RemoveStatus{
+			RemoveStatus::NOTHING_TO_DO,
+			node.get_cell_key(node.get_cell_count() - 1)
+		};
+	}
+}
+
+BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::uint32_t key) {
+	Node node(page_number, this->value_size);
+
+	std::uint32_t left_pos = 0;
+	std::uint32_t right_pos = node.get_cell_count();
+	std::uint32_t mid_pos = (left_pos + right_pos) / 2;
+
+	while (left_pos != right_pos) {
+		if (key <= node.get_cell_key(mid_pos)) {
+			right_pos = mid_pos;
+		} else {
+			left_pos = mid_pos + 1;
+		}
+		mid_pos = (left_pos + right_pos) / 2;
+	}
+
+	switch (node.get_type()) {
+	case NodeType::LEAF:
+		return leaf_remove(node, mid_pos, key);
+		break;
+
+	case NodeType::INTERIOR: {
+		std::uint32_t child_page_number = mid_pos < node.get_cell_count() ?
+			*(std::uint32_t *)node.get_cell_value(mid_pos)
+			:
+			node.get_right_child();
+
+		RemoveStatus status = rec_remove(child_page_number, key);
+		// we need to update the cells of the current interior node here,
+		// because we don't have access to it inside the last call to rec_remove
+		switch (status.action) {
+		case RemoveStatus::NOTHING_TO_DO:
+			break;
+
+		case RemoveStatus::TOOK_FROM_RIGHT_SIBLING:
+			node.set_cell(mid_pos, status.max_key, &child_page_number);
+			break;
+
+		case RemoveStatus::MERGED:
+			if (mid_pos == node.get_cell_count() - 1) {
+				node.set_right_child(child_page_number);
+				node.set_cell_count(node.get_cell_count() - 1);
+				
+				std::uint32_t min_cell_count = (((page_size - leaf_header_size) / interior_value_size) + 1) / 2;
+				if (node.get_page_number() != this->root_page
+					&& node.get_cell_count() < min_cell_count) {
+					throw std::runtime_error("TODO merge interior");
+				}
+			} else {
+				node.set_cell(mid_pos + 1, status.max_key, &child_page_number);
+				for (int j = mid_pos; j < node.get_cell_count() - 1; j++) {
+					node.set_cell(j, node.get_cell_key(j + 1), node.get_cell_value(j + 1));
+				}
+				node.set_cell_count(node.get_cell_count() - 1);
+			}
+			break;
+
+		case RemoveStatus::LEFT_SIBLING:
+			Node child_leaf(child_page_number, this->value_size);
+			Node prev_leaf(*(std::uint32_t *)node.get_cell_value(node.get_cell_count() - 1), this->value_size);
+			std::uint32_t min_cell_count = (((page_size - leaf_header_size) / this->value_size) + 1) / 2;
+			if (prev_leaf.get_cell_count() - 1 < min_cell_count) {
+				// merge with the previous leaf node
+				std::cout << "merging prev LEAF...\n";
+				node.set_cell_count(node.get_cell_count() - 1);
+
+				if (node.get_page_number() != this->root_page
+					&& node.get_cell_count() < min_cell_count) {
+					throw std::runtime_error("TODO merge interior");
+				}
+
+				prev_leaf.set_next_leaf(0);
+				for (int j = 0; j < child_leaf.get_cell_count(); j++) {
+					prev_leaf.set_cell(prev_leaf.get_cell_count() + j, child_leaf.get_cell_key(j), child_leaf.get_cell_value(j));
+				}
+				prev_leaf.set_cell_count(prev_leaf.get_cell_count() + child_leaf.get_cell_count());
+
+				node.set_right_child(prev_leaf.get_page_number());
+			} else {
+				// take the biggest key from the previous leaf node
+				// NOTE: this case cannot occur in the current implementation of
+				// the DB because of the constantly incrementing key values
+				// (there may be bugs)
+				if (mid_pos > 0) {
+					for (int j = mid_pos; j > 0; j--) {
+						child_leaf.set_cell(j, child_leaf.get_cell_key(j - 1), child_leaf.get_cell_value(j - 1));
+					}
+				}
+				child_leaf.set_cell(0, prev_leaf.get_cell_key(prev_leaf.get_cell_count() - 1),
+				                       prev_leaf.get_cell_value(prev_leaf.get_cell_count() - 1));
+				prev_leaf.set_cell_count(prev_leaf.get_cell_count() - 1);
+
+				node.set_cell(node.get_cell_count() - 1,
+								prev_leaf.get_cell_key(prev_leaf.get_cell_count() - 1),
+			                    node.get_cell_value(node.get_cell_count() - 1)); // this is just prev_leaf.page_number
+			}
+			break;
+		}
+	}
+		break;
+
+	default:
+		throw std::runtime_error("invalid node type (how?)");
+	}
+
+	return RemoveStatus{};
 }
 
 BplusTree::Node::Node(int page_number, std::uint32_t value_size)

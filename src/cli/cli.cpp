@@ -2,6 +2,7 @@
 
 #include "parser.hpp"
 #include "../commands/create_table.hpp"
+#include "../commands/drop_table.hpp"
 #include "../commands/list_tables.hpp"
 #include "../commands/table_info.hpp"
 #include "../commands/insert.hpp"
@@ -35,7 +36,7 @@ void cli() {
 					break;
 					
 				case Statement::Type::DROP_TABLE:
-					// TODO
+					drop_table(statement.table_name);
 					break;
 					
 				case Statement::Type::LIST_TABLES:

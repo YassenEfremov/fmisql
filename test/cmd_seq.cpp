@@ -3,6 +3,7 @@
 #include "../include/fmisql.hpp"
 #include "../src/cli/parser.hpp"
 #include "../src/commands/create_table.hpp"
+#include "../src/commands/drop_table.hpp"
 #include "../src/commands/list_tables.hpp"
 #include "../src/commands/table_info.hpp"
 #include "../src/commands/insert.hpp"
@@ -35,7 +36,7 @@ static void execute_command(std::string_view line) {
 		break;
 
 	case Statement::Type::DROP_TABLE:
-		// TODO
+		drop_table(statement.table_name);
 		break;
 
 	case Statement::Type::LIST_TABLES:
@@ -125,6 +126,7 @@ void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
 
 	std::remove("fmisql.db");
 	init();
+	// suppress cout?
 	for (std::string_view line : setup_lines) {
 		try {
 			execute_command(line);
@@ -373,6 +375,137 @@ void test_command_sequences() {
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
 			768
 		);
+
+		// and just an arbitrary big number of rows
+		test_command_setup_and_repeat(
+			{
+			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                    "F:String, G:String, H:String, I:String, J:String,"
+			                    "K:String, L:String, M:String, N:String, O:String)"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			1500
+		);
+	}
+
+	/* Dropping some tables */ {
+
+		// correct commands
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample6",
+			"DropTable Sample1",
+			"DropTable Sample3",
+			"ListTables"
+		});
+
+		// wrong commands
+		test_command_sequence({
+			"DropTable SomeTable"
+		}, Condition::SHOULD_FAIL);
+	}
+
+	/* Dropping tables when there are interior nodes */ {
+
+		// refer to btree.hpp for explanation of the 5 possible cases that
+		// can occur when removing cells from leaf nodes
+
+		// case 1 - tested in the previous section (Dropping some tables)
+
+		// case 2
+		// dropping tables Sample1 and Sample2 requires taking cells from
+		// the right sibling node
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample1",
+			"DropTable Sample2",
+			"ListTables"
+		});
+
+		// case 3
+		// dropping tables Sample2 and Sample3 requires merging two of the leaf
+		// nodes into one
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample2",
+			"ListTables"
+		});
+		// there is one more subcase here, which is when we merge the last two
+		// leafs, resulting in a new right child
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample7",
+			"ListTables"
+		});
+
+		// case 4 - this case cannot occur in the current implementation of the
+		// B+ Tree because of the constantly incrementing key values
+
+		// case 5
+		// dropping table Sample12 requires merging the last two leaf nodes into
+		// one
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample12",
+			"ListTables"
+		});
+	}
+
+	/* Removing a lot of rows in order to cause all kinds of situations
+	   (taking from siblings, merging, etc.) */ {
+
 	}
 }
 
