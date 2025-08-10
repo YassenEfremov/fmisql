@@ -18,10 +18,7 @@
 
 namespace fmisql {
 
-/**
- * @brief Removes leading and trailing spaces from the given string
- */
-static void trim(std::string_view &str) {
+void trim(std::string_view &str) {
 	str.remove_prefix(std::min(str.find_first_not_of(" "), str.size()));
 	str.remove_suffix(str.size() - std::min(str.find_last_not_of(" ") + 1, str.size()));
 }
@@ -622,7 +619,9 @@ Statement parse_line(std::string_view line) {
 			/*conditions =*/ parse_conditions(line, pos);
 
 			if (pos == std::string_view::npos)
-				return Statement(Statement::Type::SELECT, table_name);
+				return Statement(Statement::Type::REMOVE, table_name);
+			
+			// ORDER BY
 
 		} catch (const std::out_of_range &e) {
 			std::cout << "not enough arguments given\n";

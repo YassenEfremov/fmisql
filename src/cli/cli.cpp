@@ -22,17 +22,19 @@ void cli() {
 
 		std::cout << "FMISql> ";
 		std::getline(std::cin, line);
+		std::string_view line_view(line);
+		trim(line_view);
 
-		if (line == "Quit" || std::cin.eof()) {
+		if (line_view == "Quit" || std::cin.eof()) {
 			break;
-		} else if (!line.empty()) {
-			Statement statement = parse_line(line);
+		} else if (!line_view.empty()) {
+			Statement statement = parse_line(line_view);
 
 			try {
 				switch (statement.type) {
 				case Statement::Type::CREATE_TABLE:
 					create_table(statement.table_name, statement.create_columns,
-					line);
+					             line_view);
 					break;
 					
 				case Statement::Type::DROP_TABLE:

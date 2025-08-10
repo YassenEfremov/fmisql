@@ -1,14 +1,13 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-// #include "../classes.hpp"
 #include "../data_types.hpp"
 #include "../statement.hpp"
 
-#include <cstddef>
-
 #include <string_view>
 #include <vector>
+
+#include <cstddef>
 
 
 // struct Token {
@@ -38,6 +37,11 @@
 // };
 
 namespace fmisql {
+
+/**
+ * @brief Removes leading and trailing spaces from the given string
+ */
+void trim(std::string_view &str);
 
 /**
  * @brief Parse the given command line
