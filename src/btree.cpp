@@ -540,9 +540,15 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(Node &node, std::size_t pos, std:
 
 		return RemoveStatus{
 			RemoveStatus::NOTHING_TO_DO,
-			node.get_cell_key(node.get_cell_count() - 1)
+			node.get_cell_count() == 0 ?
+				0 : node.get_cell_key(node.get_cell_count() - 1)
 		};
 	}
+}
+
+BplusTree::RemoveStatus BplusTree::interior_remove(std::uint32_t page_number, std::uint32_t key) {
+	
+	return RemoveStatus{};
 }
 
 BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::uint32_t key) {
@@ -602,7 +608,7 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 			}
 			break;
 
-		case RemoveStatus::LEFT_SIBLING:
+		case RemoveStatus::LEFT_SIBLING: {
 			Node child_leaf(child_page_number, this->value_size);
 			Node prev_leaf(*(std::uint32_t *)node.get_cell_value(node.get_cell_count() - 1), this->value_size);
 			std::uint32_t min_cell_count = (((page_size - leaf_header_size) / this->value_size) + 1) / 2;
@@ -627,7 +633,7 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 				// take the biggest key from the previous leaf node
 				// NOTE: this case cannot occur in the current implementation of
 				// the DB because of the constantly incrementing key values
-				// (there may be bugs)
+				// (also there may be bugs here)
 				if (mid_pos > 0) {
 					for (int j = mid_pos; j > 0; j--) {
 						child_leaf.set_cell(j, child_leaf.get_cell_key(j - 1), child_leaf.get_cell_value(j - 1));
@@ -641,6 +647,7 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 								prev_leaf.get_cell_key(prev_leaf.get_cell_count() - 1),
 			                    node.get_cell_value(node.get_cell_count() - 1)); // this is just prev_leaf.page_number
 			}
+		}
 			break;
 		}
 	}

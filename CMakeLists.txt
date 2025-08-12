@@ -17,8 +17,9 @@ add_executable(fmisql
 	src/commands/drop_table.cpp
 	src/commands/list_tables.cpp
 	src/commands/table_info.cpp
-	src/commands/insert.cpp
 	src/commands/select.cpp
+	src/commands/remove.cpp
+	src/commands/insert.cpp
 	src/btree.cpp
 	src/fmisql.cpp
 	src/pager.cpp
@@ -34,8 +35,9 @@ add_executable(test
 	src/commands/drop_table.cpp
 	src/commands/list_tables.cpp
 	src/commands/table_info.cpp
-	src/commands/insert.cpp
 	src/commands/select.cpp
+	src/commands/remove.cpp
+	src/commands/insert.cpp
 	src/btree.cpp
 	src/fmisql.cpp
 	src/pager.cpp

@@ -27,6 +27,7 @@ struct Statement {
         std::string_view table_name = "",
         const std::vector<sql_types::Column> &create_columns = {},
         const std::vector<std::string_view> &select_columns = {},
+        const sql_types::Condition &condition = {},
         const std::vector<std::vector<sql_types::Value>> &insert_rows = {}
     );
 
@@ -34,7 +35,7 @@ struct Statement {
     std::string_view table_name;
     std::vector<sql_types::Column> create_columns;
     std::vector<std::string_view> select_columns;
-    // Remove?
+    sql_types::Condition condition;
     std::vector<std::vector<sql_types::Value>> insert_rows;
 };
 

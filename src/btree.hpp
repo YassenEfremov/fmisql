@@ -225,6 +225,7 @@ private:
         std::uint32_t max_key;
     };
     RemoveStatus leaf_remove(Node &node, std::size_t pos, std::uint32_t key);
+    RemoveStatus interior_remove(std::uint32_t page_number, std::uint32_t key);
     RemoveStatus rec_remove(std::uint32_t page_number, std::uint32_t key);
 
     std::uint32_t root_page;

@@ -13,12 +13,14 @@ Statement::Statement(
 	std::string_view table_name,
     const std::vector<sql_types::Column> &create_columns,
     const std::vector<std::string_view> &select_columns,
+    const sql_types::Condition &condition,
 	const std::vector<std::vector<sql_types::Value>> &insert_rows
 ) :
 	type(type),
 	table_name(table_name),
 	create_columns(create_columns),
 	select_columns(select_columns),
+	condition(condition),
 	insert_rows(insert_rows)
 {}
 

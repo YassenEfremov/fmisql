@@ -5,8 +5,9 @@
 #include "../commands/drop_table.hpp"
 #include "../commands/list_tables.hpp"
 #include "../commands/table_info.hpp"
-#include "../commands/insert.hpp"
 #include "../commands/select.hpp"
+#include "../commands/remove.hpp"
+#include "../commands/insert.hpp"
 #include "../statement.hpp"
 
 #include <iostream>
@@ -54,7 +55,7 @@ void cli() {
 					break;
 					
 				case Statement::Type::REMOVE:
-					// TODO
+					remove(statement.table_name, statement.condition);
 					break;
 					
 				case Statement::Type::INSERT:

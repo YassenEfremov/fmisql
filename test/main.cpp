@@ -16,7 +16,7 @@ int main() {
 	std::cout << "Results:\n"
 		<< fmisql::test::total << " total, "
 		<< fmisql::test::passed << GREEN " passed, " RESET
-		<< fmisql::test::failed << RED " failed" RESET;
+		<< fmisql::test::failed << RED " failed" RESET "\n";
 
 	return 0;
 }

@@ -7,15 +7,15 @@
 #include "../schema.hpp"
 #include "../statement.hpp"
 
-#include <cstdint>
-#include <cstring>
-
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <stdexcept>
 #include <variant>
 #include <vector>
+
+#include <cstdint>
+#include <cstring>
 
 
 namespace fmisql {
@@ -30,11 +30,6 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 
 // Example inset statements:
-// Insert INTO Sample {(15, "Test message", 120)}
-// Insert INTO Sample {(16, "farlands", 99)}
-// Insert INTO Sample {(1, "asd", 12), (2, "asd", 12), (3, "asd", 12), (4, "asd", 12), (5, "ddd", 5)}
-// Insert INTO Sample {(6, "asd", 12), (7, "asd", 12), (8, "asd", 12), (9, "asd", 12), (10, "ddd", 5)}
-// Insert INTO Sample {(11, "asd", 12), (12, "asd", 12), (13, "asd", 12), (14, "asd", 12), (15, "ddd", 5)}
 // Insert INTO Sample {(15, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 120)}
 
 void insert(std::string_view table_name, const std::vector<std::vector<sql_types::Value>> &rows) {
@@ -54,22 +49,27 @@ void insert(std::string_view table_name, const std::vector<std::vector<sql_types
 		for (sql_types::Value value : row) {
 			std::visit(overloaded{
 				[&](sql_types::Int value) {
-					if (statement.create_columns[i].type_id != sql_types::Id::INT)
+					if (statement.create_columns[i].type_id != sql_types::Id::INT) {
 						throw std::runtime_error("Int value doesn't match the column it's in");
+					}
 					*(sql_types::Int *)(buffer + offset) = value;
 					offset += sql_types::max_int_size;
 				},
 				[&](sql_types::String value) {
-					if (statement.create_columns[i].type_id != sql_types::Id::STRING)
+					if (statement.create_columns[i].type_id != sql_types::Id::STRING) {
 						throw std::runtime_error("String value doesn't match the column it's in");
-					if (value.size() > sql_types::max_string_size)
+					}
+					if (value.size() > sql_types::max_string_size) {
 						throw std::runtime_error("max sql string size is " + std::to_string(sql_types::max_string_size) + " characters");
+					}
+					std::memset(buffer + offset, 0, sql_types::max_string_size);
 					std::memcpy(buffer + offset, value.data(), value.size());
 					offset += sql_types::max_string_size;
 				},
 				[&](sql_types::Date value) {
-					if (statement.create_columns[i].type_id != sql_types::Id::DATE)
-						throw std::runtime_error("DATE value doesn't match the column it's in");
+					if (statement.create_columns[i].type_id != sql_types::Id::DATE) {
+						throw std::runtime_error("Date value doesn't match the column it's in");
+					}
 					*(sql_types::Date *)(buffer + offset) = value;
 					offset += sql_types::max_date_size;
 				}

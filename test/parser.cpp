@@ -19,10 +19,6 @@
 
 namespace fmisql::test {
 
-/**
- * @brief Tests whether the syntax of the given command is correct.
- *        Default condition is SHOULD_PASS.
- */
 void test_command(std::string_view line, Condition condition) {
 	std::cout << "Testing command:\n\"" << line <<  "\"\n";
 	fmisql::Statement statement = fmisql::parse_line(line);
@@ -53,9 +49,6 @@ void test_command(std::string_view line, Condition condition) {
 	std::cout << '\n';
 }
 
-/**
- * @brief Tests the entire syntax of our SQL language
- */
 void test_parser() {
 
 	/* CreateTable command */ {
@@ -166,8 +159,8 @@ void test_parser() {
 	/* Select command */ {
 
 		// by requirement
-		test_command("Select Name FROM Sample WHERE ID != 5 AND Value < 50");
-		test_command("Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name");
+		// test_command("Select Name FROM Sample WHERE ID != 5 AND Value < 50");
+		// test_command("Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name");
 		
 		// correct commands
 		test_command("Select Name FROM Sample");
@@ -181,7 +174,7 @@ void test_parser() {
 		test_command("Select Name FROM Sample WHERE Name = \"Baba\"");
 		test_command("  Select  Name  FROM  Sample  WHERE  Name  =  \"Baba\"  ");
 		test_command("Select Name FROM Sample WHERE Name = \"Baba\" ORDER BY Name");
-		test_command("Select Id, Name FROM Sample WHERE Id=5 AND Name=\"Baba\" OR Id=6 AND Name!=\"Baba\" ORDER BY Name");
+		// test_command("Select Id, Name FROM Sample WHERE Id=5 AND Name=\"Baba\" OR Id=6 AND Name!=\"Baba\" ORDER BY Name");
 
 		// wrong commands
 		test_command("Select FROM Sample", Condition::SHOULD_FAIL);

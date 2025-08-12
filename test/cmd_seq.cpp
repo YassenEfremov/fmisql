@@ -6,8 +6,9 @@
 #include "../src/commands/drop_table.hpp"
 #include "../src/commands/list_tables.hpp"
 #include "../src/commands/table_info.hpp"
-#include "../src/commands/insert.hpp"
 #include "../src/commands/select.hpp"
+#include "../src/commands/remove.hpp"
+#include "../src/commands/insert.hpp"
 #include "../src/statement.hpp"
 
 #include "util.hpp"
@@ -52,7 +53,7 @@ static void execute_command(std::string_view line) {
 		break;
 
 	case Statement::Type::REMOVE:
-		// TODO
+		remove(statement.table_name, statement.condition);
 		break;
 
 	case Statement::Type::INSERT:
@@ -64,10 +65,6 @@ static void execute_command(std::string_view line) {
 	}
 }
 
-/**
- * @brief Tests whether the given sequence of commands works.
- *        Default condition is SHOULD_PASS.
- */
 void test_command_sequence(std::vector<std::string_view> lines, Condition condition) {
 	std::cout << "Testing command sequence:\n";
 	for (std::string_view line : lines) {
@@ -110,14 +107,13 @@ void test_command_sequence(std::vector<std::string_view> lines, Condition condit
 	std::cout << '\n';
 }
 
-/**
- * @brief Executes `setup_lines` once and `repeat_line` `n` times.
- *        Default condition is SHOULD_PASS.
- */
-void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
-                                   std::string_view repeat_line,
-                                   std::size_t n,
-	                               Condition condition) {
+void test_command_setup_repeat_end(
+	std::vector<std::string_view> setup_lines,
+    std::string_view repeat_line,
+    std::size_t n,
+    std::vector<std::string_view> end_lines,
+	Condition condition
+) {
 	std::cout << "Testing command sequence:\n  Setup:\n";
 	for (std::string_view line : setup_lines) {
 		std::cout << "    " << line << '\n';
@@ -127,46 +123,73 @@ void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
 	std::remove("fmisql.db");
 	init();
 	// suppress cout?
-	for (std::string_view line : setup_lines) {
-		try {
+	try {
+		for (std::string_view line : setup_lines) {
 			execute_command(line);
-		} catch (const std::runtime_error &e) {
-			std::cout << e.what() << '\n';
-			if (condition == Condition::SHOULD_FAIL) {
-				passed++;
-				std::cout << CYAN "  failed... OK\n" RESET;
-			} else {
-				failed++;
-				std::cout << RED "  FAILED\n" RESET;
-			}
-			
-			total++;
-			deinit();
-			std::remove("fmisql.db");
-			std::cout << '\n';
-			return;
 		}
-	}
-	for (int i = 0; i < n; i++) {
-		try {
+		for (int i = 0; i < n; i++) {
 			execute_command(repeat_line);
-		} catch (const std::runtime_error &e) {
-			std::cout << e.what() << '\n';
-			if (condition == Condition::SHOULD_FAIL) {
-				passed++;
-				std::cout << CYAN "  failed... OK\n" RESET;
-			} else {
-				failed++;
-				std::cout << RED "  FAILED\n" RESET;
-			}
-			
-			total++;
-			deinit();
-			std::remove("fmisql.db");
-			std::cout << '\n';
-			return;
 		}
+		for (std::string_view line : end_lines) {
+			execute_command(line);
+		}
+
+	} catch (const std::runtime_error &e) {
+		std::cout << e.what() << '\n';
+		if (condition == Condition::SHOULD_FAIL) {
+			passed++;
+			std::cout << CYAN "  failed... OK\n" RESET;
+		} else {
+			failed++;
+			std::cout << RED "  FAILED\n" RESET;
+		}
+		
+		total++;
+		deinit();
+		std::remove("fmisql.db");
+		std::cout << '\n';
+		return;
 	}
+	// for (std::string_view line : setup_lines) {
+	// 	try {
+	// 		execute_command(line);
+	// 	} catch (const std::runtime_error &e) {
+	// 		std::cout << e.what() << '\n';
+	// 		if (condition == Condition::SHOULD_FAIL) {
+	// 			passed++;
+	// 			std::cout << CYAN "  failed... OK\n" RESET;
+	// 		} else {
+	// 			failed++;
+	// 			std::cout << RED "  FAILED\n" RESET;
+	// 		}
+			
+	// 		total++;
+	// 		deinit();
+	// 		std::remove("fmisql.db");
+	// 		std::cout << '\n';
+	// 		return;
+	// 	}
+	// }
+	// for (int i = 0; i < n; i++) {
+	// 	try {
+	// 		execute_command(repeat_line);
+	// 	} catch (const std::runtime_error &e) {
+	// 		std::cout << e.what() << '\n';
+	// 		if (condition == Condition::SHOULD_FAIL) {
+	// 			passed++;
+	// 			std::cout << CYAN "  failed... OK\n" RESET;
+	// 		} else {
+	// 			failed++;
+	// 			std::cout << RED "  FAILED\n" RESET;
+	// 		}
+			
+	// 		total++;
+	// 		deinit();
+	// 		std::remove("fmisql.db");
+	// 		std::cout << '\n';
+	// 		return;
+	// 	}
+	// }
 	if (condition == Condition::SHOULD_FAIL) {
 		failed++;
 		std::cout << RED "  FAILED\n" RESET;
@@ -180,10 +203,7 @@ void test_command_setup_and_repeat(std::vector<std::string_view> setup_lines,
 	std::remove("fmisql.db");
 	std::cout << '\n';
 }
-	
-/**
- * @brief Tests a lot of possible commands sequences
- */	
+
 void test_command_sequences() {
 
 	/* by requirement */ {
@@ -292,7 +312,7 @@ void test_command_sequences() {
 		}, Condition::SHOULD_FAIL);
 	}
 
-	/* Creating a lot of tables in order to cause node splits */ {
+	/* Creating a lot of tables in order to cause leaf node splits */ {
 
 		// creating 8 tables causes 1 leaf split
 		test_command_sequence({
@@ -328,63 +348,58 @@ void test_command_sequences() {
 		// It could be automated, but I'm also lazy.
 	}
 
-	/* Inserting a lot of rows in order to cause node splits */ {
+	/* Inserting a lot of rows in order to cause interior node splits */ {
 
 		// The page is 4096 bytes and excluding the header, the space for rows is
 		//   4096 - 9 = 4087 bytes
 		// Therefore the maximum size for a row that contains only strings is
-		//   4087 / (4 + 256) = ~15.7
+		//   (4087 - 4) / 256 = ~15.9
 		// So a table with 15 string columns would require one row to fill an entire page.
 		// 512 rows in such a table would cause an interior node split.
-		test_command_setup_and_repeat(
-			{
-			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-			                    "F:String, G:String, H:String, I:String, J:String,"
-			                    "K:String, L:String, M:String, N:String, O:String)"
-			},
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-			511
+			511,
+			{ "TableInfo Sample" }
 		);
-		test_command_setup_and_repeat(
-			{
-			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-			                    "F:String, G:String, H:String, I:String, J:String,"
-			                    "K:String, L:String, M:String, N:String, O:String)"
-			},
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-			512
+			512,
+			{ "TableInfo Sample" }
 		);
-		test_command_setup_and_repeat(
-			{
-			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-			                    "F:String, G:String, H:String, I:String, J:String,"
-			                    "K:String, L:String, M:String, N:String, O:String)"
-			},
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-			600
+			600,
+			{ "TableInfo Sample" }
 		);
 
 		// 256 more rows will cause another interior node split, so 768 total
 		// which will require an insertion into the root note
-		test_command_setup_and_repeat(
-			{
-			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-			                    "F:String, G:String, H:String, I:String, J:String,"
-			                    "K:String, L:String, M:String, N:String, O:String)"
-			},
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-			768
+			768,
+			{ "TableInfo Sample" }
 		);
 
 		// and just an arbitrary big number of rows
-		test_command_setup_and_repeat(
-			{
-			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-			                    "F:String, G:String, H:String, I:String, J:String,"
-			                    "K:String, L:String, M:String, N:String, O:String)"
-			},
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-			1500
+			1500,
+			{ "TableInfo Sample" }
 		);
 	}
 
@@ -411,7 +426,29 @@ void test_command_sequences() {
 		}, Condition::SHOULD_FAIL);
 	}
 
-	/* Dropping tables when there are interior nodes */ {
+	/* Removing from tables */ {
+
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE ID = 1",
+			"Select * FROM Sample"
+		});
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE ID != 1",
+			"Select * FROM Sample"
+		});
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE Name = \"hello\"",
+			"Select * FROM Sample"
+		});
+	}
+
+	/* Dropping tables in order to cause leaf node merges */ {
 
 		// refer to btree.hpp for explanation of the 5 possible cases that
 		// can occur when removing cells from leaf nodes
@@ -479,7 +516,7 @@ void test_command_sequences() {
 		});
 
 		// case 4 - this case cannot occur in the current implementation of the
-		// B+ Tree because of the constantly incrementing key values
+		// database because of the constantly incrementing key values
 
 		// case 5
 		// dropping table Sample12 requires merging the last two leaf nodes into
@@ -503,9 +540,20 @@ void test_command_sequences() {
 		});
 	}
 
-	/* Removing a lot of rows in order to cause all kinds of situations
-	   (taking from siblings, merging, etc.) */ {
+	/* Removing a lot of rows in order to cause interior node merges */ {
 
+		// test_command_setup_repeat_end(
+		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+		// 	                      "F:String, G:String, H:String, I:String, J:String,"
+		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
+		// 	"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 	511,
+		// 	{
+		// 		"Insert INTO Sample {(\"a\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 		"TableInfo Sample",
+		// 		"Remove FROM Sample WHERE A == \"a\""
+		// 	}
+		// );
 	}
 }
 

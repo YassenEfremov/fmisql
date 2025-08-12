@@ -15,17 +15,17 @@
 
 namespace fmisql {
 
-static bool columns_contain(const std::vector<std::string_view> &columns,
-                            std::string_view target) {
+// static bool columns_contain(const std::vector<std::string_view> &columns,
+//                             std::string_view target) {
 
-	if (columns.empty()) return true;
+// 	if (columns.empty()) return true;
 
-	for (std::string_view column : columns) {
-		if (column == target) return true;
-	}
+// 	for (std::string_view column : columns) {
+// 		if (column == target) return true;
+// 	}
 
-	return false;
-}
+// 	return false;
+// }
 
 void select(const std::vector<std::string_view> &column_names,
             std::string_view table_name) {
@@ -54,15 +54,16 @@ void select(const std::vector<std::string_view> &column_names,
 
 		std::uint32_t offset = 0;
 		int i = 0;
+		std::cout << "|";
 		for (sql_types::Column column : statement.create_columns) {
 			if (column_names.empty() || (i < column_names.size() && column.name == column_names[i])) {
 				switch (column.type_id) {
 				case sql_types::Id::INT:
-					std::cout << *(sql_types::Int *)(((std::uint8_t *)cell) + key_size + offset) << "    ";
+					std::cout << ' ' << *(sql_types::Int *)(((std::uint8_t *)cell) + key_size + offset) << " |";
 					offset += sql_types::max_int_size;
 					break;
 				case sql_types::Id::STRING:
-					std::cout << std::string_view((char *)(((std::uint8_t *)cell) + key_size + offset), sql_types::max_string_size) << "    ";
+					std::cout << " \"" << std::string_view((char *)(((std::uint8_t *)cell) + key_size + offset), sql_types::max_string_size) << "\" |";
 					offset += sql_types::max_string_size;
 					break;
 				case sql_types::Id::DATE:

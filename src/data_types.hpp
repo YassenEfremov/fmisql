@@ -1,10 +1,12 @@
 #ifndef DATA_TYPES_HPP
 #define DATA_TYPES_HPP
 
-#include <cstdint>
-#include <cstring>
+#include <functional>
 #include <string_view>
 #include <variant>
+
+#include <cstdint>
+#include <cstring>
 #include <ctime>
 
 
@@ -27,6 +29,12 @@ constexpr std::size_t max_date_size = sizeof(Date);
 using Value = std::variant<Int, String, Date>;
 
 struct Column { std::string_view name; sql_types::Id type_id; };
+
+struct Condition {
+	std::string_view column_name;
+	std::function<bool(sql_types::Value)> op;
+	sql_types::Value value;
+};
 
 } // namespace fmisql
 
