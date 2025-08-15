@@ -542,18 +542,26 @@ void test_command_sequences() {
 
 	/* Removing a lot of rows in order to cause interior node merges */ {
 
-		// test_command_setup_repeat_end(
-		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-		// 	                      "F:String, G:String, H:String, I:String, J:String,"
-		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
-		// 	"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-		// 	511,
-		// 	{
-		// 		"Insert INTO Sample {(\"a\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-		// 		"TableInfo Sample",
-		// 		"Remove FROM Sample WHERE A == \"a\""
-		// 	}
-		// );
+		// refer to btree.hpp for explanation of the 5 possible cases that
+		// can occur when removing cells from interior nodes
+
+		// case 1
+		//
+
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			511,
+			{
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+				                    "(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+				// "TableInfo Sample",
+				"Select * FROM Sample",
+				"Remove FROM Sample WHERE A = \"!\""
+			}
+		);
 	}
 }
 

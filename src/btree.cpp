@@ -305,17 +305,17 @@ std::uint32_t BplusTree::leaf_insert(Node &node, std::size_t pos, std::uint32_t 
 
 		Node right_node(NodeType::LEAF, this->value_size);
 		right_node.set_cell_count(right_split_count);
-		// note: the loop below runs ONE MORE time than the number of cells in node
-		for (int i = 0; i <= node.get_cell_count(); i++) {
-			Node *dst_node = i < left_split_count ? &node : &right_node;
+		// note the less than OR EQUALS in the loop below
+		for (int i = node.get_cell_count(); i >= 0; i--) {
+			Node dst_node = i >= left_split_count ? right_node : node;
 			std::size_t dst_i = i % left_split_count;
 
 			if (i == pos) {
-				dst_node->set_cell(dst_i, key, value);
+				dst_node.set_cell(dst_i, key, value);
 			} else if (i > pos) {
-				dst_node->set_cell(dst_i - 1, node.get_cell_key(i - 1), node.get_cell_value(i - 1));
+				dst_node.set_cell(dst_i, node.get_cell_key(i - 1), node.get_cell_value(i - 1));
 			} else {
-				dst_node->set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
+				dst_node.set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
 			}
 		}
 
@@ -364,20 +364,19 @@ std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint3
 	if (cell_start + key_size + interior_value_size > page_size) {
 		std::cout << "splitting INTERIOR...\n";
 
-		// for interior nodes the split counts are the opposite of those for
-		// leaf nodes, i.e. the right node gets one more cell
-		// this is because of the right child
-		int left_split_count = node.get_cell_count() / 2;
-		int right_split_count = node.get_cell_count() - left_split_count - 1;
+
+		int right_split_count = node.get_cell_count() / 2;
+		int left_split_count = node.get_cell_count() - right_split_count;
 
 		Node right_node(NodeType::INTERIOR, interior_value_size);
 		right_node.set_cell_count(right_split_count);
-		right_node.set_right_child(node.get_right_child());
+		// right_node.set_right_child(node.get_right_child());
+		right_node.set_right_child(value); // not always the case
 		for (int i = 0; i < node.get_cell_count(); i++) {
-			Node *dst_node = i < left_split_count ? &node : &right_node;
+			Node &dst_node = i < left_split_count ? node : right_node;
 			std::size_t dst_i = i % left_split_count;
 
-			dst_node->set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
+			dst_node.set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
 		}
 
 		if (node.get_page_number() == this->root_page) {
@@ -402,6 +401,80 @@ std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint3
 			return right_node.get_page_number();
 		}
 
+		// // for interior nodes the split counts are the opposite of those for
+		// // leaf nodes, i.e. the right node gets one more cell
+		// // this is because the right child is NOT a cell
+
+
+		// // these are temporary, we update them after the higher half is copied
+		// int right_split_count = (node.get_cell_count() + 1) / 2;
+		// int left_split_count = node.get_cell_count() + 1 - right_split_count;
+
+		// Node right_node(NodeType::INTERIOR, interior_value_size);
+		// right_node.set_cell_count(right_split_count);
+		// right_node.set_right_child(node.get_right_child());
+		// std::uint32_t mid_key = 0;
+		// bool mid_key_set = false;
+		// for (int i = node.get_cell_count(); i >= node.get_cell_count() / 2; i--) {
+		// 	Node dst_node = i >= left_split_count ? right_node : node;
+		// 	std::size_t dst_i = i % left_split_count;
+
+		// 	if (i == pos && !mid_key_set) {
+		// 		if (pos == node.get_cell_count()) {
+		// 			dst_node.set_right_child(value);
+		// 			i++;
+		// 			mid_key_set = true;
+		// 		} else {
+		// 			dst_node.set_cell(dst_i, key, &value);
+		// 		}
+		// 	} else if (i > pos) {
+		// 		dst_node.set_cell(dst_i, node.get_cell_key(i - 1), node.get_cell_value(i - 1));
+		// 	} else {
+		// 		dst_node.set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
+		// 	}
+		// }
+
+		// right_split_count = node.get_cell_count() / 2;
+		// left_split_count = node.get_cell_count() - right_split_count;
+
+		// if (pos < left_split_count) {
+		// 	mid_key = node.get_cell_key(left_split_count - 1);
+		// 	node.set_right_child(left_split_count - 1);
+		// 	for (int j = left_split_count - 1; j > pos; j--) {
+		// 		node.set_cell(j, node.get_cell_key(j - 1), node.get_cell_value(j - 1));
+		// 	}
+		// 	node.set_cell(pos, key, &value);
+		// } else if (pos > left_split_count) {
+		// 	mid_key = node.get_cell_key(left_split_count);
+		// 	node.set_right_child(*(std::uint32_t *)node.get_cell_value(left_split_count));
+		// } else {
+		// 	mid_key = key;
+		// 	node.set_right_child(value);
+		// }
+
+
+		// if (node.get_page_number() == this->root_page) {
+		// 	// create new left node
+
+		// 	Node left_node(NodeType::INTERIOR, interior_value_size);
+		// 	left_node.set_cell_count(left_split_count);
+		// 	left_node.set_right_child(node.get_right_child());
+		// 	for (int i = 0; i < left_split_count; i++) {
+		// 		left_node.set_cell(i, node.get_cell_key(i), node.get_cell_value(i));
+		// 	}
+
+		// 	node.set_cell_count(1);
+		// 	node.set_right_child(right_node.get_page_number());
+		// 	std::uint32_t temp_value = left_node.get_page_number();
+		// 	node.set_cell(0, mid_key, &temp_value);
+
+		// } else {
+		// 	// insert into parent interior node
+		// 	node.set_cell_count(left_split_count);
+		// 	// node.set_right_child(value);
+		// 	return right_node.get_page_number();
+		// }
+
 	} else {
 		Node new_node(value, this->value_size);
 		std::uint32_t new_node_max_key = new_node.get_cell_key(new_node.get_cell_count() - 1);
@@ -413,7 +486,7 @@ std::uint32_t BplusTree::interior_insert(Node &node, std::size_t pos, std::uint3
 			node.set_cell(pos, new_node_max_key, &value);
 		} else {
 			Node right_child(node.get_right_child(), this->value_size);
-			std::uint32_t right_child_page_number = node.get_right_child();
+			std::uint32_t right_child_page_number = right_child.get_page_number();
 
 			node.set_cell(pos, right_child.get_cell_key(right_child.get_cell_count() - 1), &right_child_page_number);
 			node.set_right_child(value);
@@ -590,6 +663,7 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 			break;
 
 		case RemoveStatus::MERGED:
+			std::cout << "merging LEAF...\n";
 			if (mid_pos == node.get_cell_count() - 1) {
 				node.set_right_child(child_page_number);
 				node.set_cell_count(node.get_cell_count() - 1);
@@ -609,7 +683,7 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 			break;
 
 		case RemoveStatus::LEFT_SIBLING: {
-			Node child_leaf(child_page_number, this->value_size);
+			Node last_leaf(child_page_number, this->value_size);
 			Node prev_leaf(*(std::uint32_t *)node.get_cell_value(node.get_cell_count() - 1), this->value_size);
 			std::uint32_t min_cell_count = (((page_size - leaf_header_size) / this->value_size) + 1) / 2;
 			if (prev_leaf.get_cell_count() - 1 < min_cell_count) {
@@ -617,18 +691,18 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 				std::cout << "merging prev LEAF...\n";
 				node.set_cell_count(node.get_cell_count() - 1);
 
+				prev_leaf.set_next_leaf(0);
+				for (int j = 0; j < last_leaf.get_cell_count(); j++) {
+					prev_leaf.set_cell(prev_leaf.get_cell_count() + j, last_leaf.get_cell_key(j), last_leaf.get_cell_value(j));
+				}
+				prev_leaf.set_cell_count(prev_leaf.get_cell_count() + last_leaf.get_cell_count());
+				
+				node.set_right_child(prev_leaf.get_page_number());
+				
 				if (node.get_page_number() != this->root_page
 					&& node.get_cell_count() < min_cell_count) {
 					throw std::runtime_error("TODO merge interior");
 				}
-
-				prev_leaf.set_next_leaf(0);
-				for (int j = 0; j < child_leaf.get_cell_count(); j++) {
-					prev_leaf.set_cell(prev_leaf.get_cell_count() + j, child_leaf.get_cell_key(j), child_leaf.get_cell_value(j));
-				}
-				prev_leaf.set_cell_count(prev_leaf.get_cell_count() + child_leaf.get_cell_count());
-
-				node.set_right_child(prev_leaf.get_page_number());
 			} else {
 				// take the biggest key from the previous leaf node
 				// NOTE: this case cannot occur in the current implementation of
@@ -636,10 +710,10 @@ BplusTree::RemoveStatus BplusTree::rec_remove(std::uint32_t page_number, std::ui
 				// (also there may be bugs here)
 				if (mid_pos > 0) {
 					for (int j = mid_pos; j > 0; j--) {
-						child_leaf.set_cell(j, child_leaf.get_cell_key(j - 1), child_leaf.get_cell_value(j - 1));
+						last_leaf.set_cell(j, last_leaf.get_cell_key(j - 1), last_leaf.get_cell_value(j - 1));
 					}
 				}
-				child_leaf.set_cell(0, prev_leaf.get_cell_key(prev_leaf.get_cell_count() - 1),
+				last_leaf.set_cell(0, prev_leaf.get_cell_key(prev_leaf.get_cell_count() - 1),
 				                       prev_leaf.get_cell_value(prev_leaf.get_cell_count() - 1));
 				prev_leaf.set_cell_count(prev_leaf.get_cell_count() - 1);
 

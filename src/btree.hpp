@@ -210,6 +210,25 @@ private:
     // 5. removing cells (when there is NO next leaf) requires taking cells
     //    from the previous leaf, but that previous leaf has too few cells,
     //    so we need to merge the two leafs
+
+    // There are 5 cases when removing cells from interior nodes:
+    // 1. removing cells doesn't require any updates to the tree
+    // 2. removing cells (when there IS a next interior) requires taking cells
+    //    from that next interior
+    // 3. removing cells (when there IS a next interior) requires taking cells
+    //    from that next interior, but that next interior has too few cells, so
+    //    we need to merge the two cells
+    // 4. removing cells (when there is NO next interior) requires taking cells
+    //    from the previous interior
+    // 5. removing cells (when there is NO next interior) requires taking cells
+    //    from the previous interior, but that previous interior has too few
+    //    cells, so we need to merge the two interiors
+
+    // final case: when the parent of the nodes we are deleting from is the root
+    // 1. we are deleting from leafs and need to merge, so the merged node
+    //    becomes the new root
+    // 2. we are deleting from interiors and need to merge, so the merged node
+    //    becomes the new root
     struct RemoveStatus {
         enum {
             // common

@@ -6,11 +6,12 @@
 #include "../schema.hpp"
 #include "../statement.hpp"
 
-#include <cstring>
-
+#include <algorithm>
 #include <iostream>
 #include <string_view>
 #include <vector>
+
+#include <cstring>
 
 
 namespace fmisql {
@@ -56,7 +57,8 @@ void select(const std::vector<std::string_view> &column_names,
 		int i = 0;
 		std::cout << "|";
 		for (sql_types::Column column : statement.create_columns) {
-			if (column_names.empty() || (i < column_names.size() && column.name == column_names[i])) {
+			if (column_names.empty() || (i < column_names.size()
+				&& std::find(column_names.begin(), column_names.end(), column.name) != column_names.end())) {
 				switch (column.type_id) {
 				case sql_types::Id::INT:
 					std::cout << ' ' << *(sql_types::Int *)(((std::uint8_t *)cell) + key_size + offset) << " |";

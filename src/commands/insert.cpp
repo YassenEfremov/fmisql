@@ -78,6 +78,7 @@ void insert(std::string_view table_name, const std::vector<std::vector<sql_types
 			i++;
 		}
 
+		std::cout << "inserting...\n";
 		table_BplusTree.insert(table_BplusTree.get_total_cell_count(), buffer);
 	}
 
