@@ -10,8 +10,10 @@
 #include "../commands/insert.hpp"
 #include "../statement.hpp"
 
+#include <exception>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 
 namespace fmisql {
@@ -29,9 +31,9 @@ void cli() {
 		if (line_view == "Quit" || std::cin.eof()) {
 			break;
 		} else if (!line_view.empty()) {
-			Statement statement = parse_line(line_view);
-
 			try {
+				Statement statement = parse_line(line_view);
+			
 				switch (statement.type) {
 				case Statement::Type::CREATE_TABLE:
 					create_table(statement.table_name, statement.create_columns,
@@ -65,7 +67,10 @@ void cli() {
 				default:
 					break;
 				}
-			} catch (const std::runtime_error &e) {
+			
+			} catch (const std::out_of_range &e) {
+				std::cout << "not enough arguments given\n";
+			} catch (const std::exception &e) {
 				std::cout << e.what() << '\n';
 			}
 		}

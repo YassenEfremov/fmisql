@@ -10,19 +10,22 @@
 
 #include "util.hpp"
 
-#include <cstdlib>
-
+#include <exception>
 #include <iostream>
 #include <string>
 #include <string_view>
+
+#include <cstdlib>
 
 
 namespace fmisql::test {
 
 void test_command(std::string_view line, Condition condition) {
 	std::cout << "Testing command:\n\"" << line <<  "\"\n";
-	fmisql::Statement statement = fmisql::parse_line(line);
-	if (statement.type != fmisql::Statement::Type::INVALID) {
+
+	try {
+		fmisql::Statement statement = fmisql::parse_line(line);
+	
 		switch (condition) {
 		case Condition::SHOULD_PASS:
 			passed++;
@@ -33,7 +36,8 @@ void test_command(std::string_view line, Condition condition) {
 			std::cout << RED "  FAILED\n" RESET;
 			break;
 		}
-	} else {
+
+	} catch (const std::exception &e) {
 		switch (condition) {
 		case Condition::SHOULD_PASS:
 			failed++;			
@@ -44,7 +48,8 @@ void test_command(std::string_view line, Condition condition) {
 			std::cout << CYAN "  failed... OK\n" RESET;
 			break;
 		}
-	}
+	};
+
 	total++;
 	std::cout << '\n';
 }
@@ -221,6 +226,7 @@ void test_parser() {
 		test_command("Insert INTO Sample {(12, \"Some text\")}");
 		test_command("Insert INTO Sample {(12, \"Some text\", \"abc\", 0), (12, \"Some more text\", \"efg\", 1)}");
 		test_command("  Insert  INTO  Sample  {  (  12  ,  \"Some text\")  ,  (  13  ,  \"Some more text\"  )  }  ");
+		test_command("Insert INTO Sample {(4294967295)}"); // 32 bit Int limit
 
 		// wrong commands
 		test_command("Insert Sample {(12)}", Condition::SHOULD_FAIL);
@@ -242,6 +248,10 @@ void test_parser() {
 		test_command("Insert INTO Sample {(12, , \"Some text\")}", Condition::SHOULD_FAIL);
 		test_command("Insert INTO Sample {(12, \"Some text\") (13, \"Some more text\")}", Condition::SHOULD_FAIL);
 		test_command("Insert INTO Sample {(12, \"Some text\"), , (14, \"Some even more text\")}", Condition::SHOULD_FAIL);
+
+		test_command("Insert INTO Sample {(-12)}", Condition::SHOULD_FAIL); // temporary
+		test_command("Insert INTO Sample {(4294967296)}", Condition::SHOULD_FAIL);
+		test_command("Insert INTO Sample {(111111111111111111111111111111111111)}", Condition::SHOULD_FAIL);
 	}
 }
 

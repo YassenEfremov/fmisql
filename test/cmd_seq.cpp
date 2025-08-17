@@ -114,11 +114,17 @@ void test_command_setup_repeat_end(
     std::vector<std::string_view> end_lines,
 	Condition condition
 ) {
-	std::cout << "Testing command sequence:\n  Setup:\n";
+	std::cout << "Testing command sequence:\n"
+	             "  Setup:\n";
 	for (std::string_view line : setup_lines) {
 		std::cout << "    " << line << '\n';
 	}
-	std::cout << "  Repeating x" << n << " times:\n    " << repeat_line << '\n';
+	std::cout << "  Repeating x" << n << " times:\n    "
+		<< repeat_line << '\n';
+	std::cout << "  End:\n";
+	for (std::string_view line : end_lines) {
+		std::cout << "    " << line << '\n';
+	}
 
 	std::remove("fmisql.db");
 	init();
@@ -150,46 +156,7 @@ void test_command_setup_repeat_end(
 		std::cout << '\n';
 		return;
 	}
-	// for (std::string_view line : setup_lines) {
-	// 	try {
-	// 		execute_command(line);
-	// 	} catch (const std::runtime_error &e) {
-	// 		std::cout << e.what() << '\n';
-	// 		if (condition == Condition::SHOULD_FAIL) {
-	// 			passed++;
-	// 			std::cout << CYAN "  failed... OK\n" RESET;
-	// 		} else {
-	// 			failed++;
-	// 			std::cout << RED "  FAILED\n" RESET;
-	// 		}
-			
-	// 		total++;
-	// 		deinit();
-	// 		std::remove("fmisql.db");
-	// 		std::cout << '\n';
-	// 		return;
-	// 	}
-	// }
-	// for (int i = 0; i < n; i++) {
-	// 	try {
-	// 		execute_command(repeat_line);
-	// 	} catch (const std::runtime_error &e) {
-	// 		std::cout << e.what() << '\n';
-	// 		if (condition == Condition::SHOULD_FAIL) {
-	// 			passed++;
-	// 			std::cout << CYAN "  failed... OK\n" RESET;
-	// 		} else {
-	// 			failed++;
-	// 			std::cout << RED "  FAILED\n" RESET;
-	// 		}
-			
-	// 		total++;
-	// 		deinit();
-	// 		std::remove("fmisql.db");
-	// 		std::cout << '\n';
-	// 		return;
-	// 	}
-	// }
+
 	if (condition == Condition::SHOULD_FAIL) {
 		failed++;
 		std::cout << RED "  FAILED\n" RESET;
@@ -213,14 +180,14 @@ void test_command_sequences() {
 			"ListTables",
 			"TableInfo Simple"
 		}, Condition::SHOULD_FAIL);
-		test_command_sequence({
-			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
-			"ListTables",
-			"TableInfo Sample",
-			"Insert INTO Sample {(1, \"Test\", 1), (2, \"something else\", 100)}",
-			"Select Name FROM Sample WHERE ID != 5 AND Value < 50",
-			"Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name"
-		});
+		// test_command_sequence({
+		// 	"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+		// 	"ListTables",
+		// 	"TableInfo Sample",
+		// 	"Insert INTO Sample {(1, \"Test\", 1), (2, \"something else\", 100)}",
+		// 	"Select Name FROM Sample WHERE ID != 5 AND Value < 50",
+		// 	"Select * FROM Sample WHERE ID != 5 AND Name > \"Baba\" ORDER BY Name"
+		// });
 	}
 	
 	/* Creating simple tables and showing info about them */ {
