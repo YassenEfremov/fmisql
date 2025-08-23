@@ -603,7 +603,11 @@ Statement parse_line(std::string_view line) {
 
 	} else if (command_name == "Remove") {
 		std::string_view table_name;
-		sql_types::Condition condition{ "", [](sql_types::Value) { return true; }, {} };
+		sql_types::Condition condition{
+			{},
+			[](sql_types::Value) { return true; }, // remove all rows by default
+			{}
+		};
 
 		/**
 		 * Remove FROM <table>
@@ -639,12 +643,6 @@ Statement parse_line(std::string_view line) {
 		 */
 		skip_spaces(line, pos);
 		condition = parse_conditions(line, pos);
-
-		if (pos == std::string_view::npos)
-			return Statement(Statement::Type::REMOVE, table_name, {}, {}, condition);
-		
-		// ORDER BY
-		// TODO
 
 		return Statement(Statement::Type::REMOVE, table_name, {}, {}, condition);
 

@@ -122,7 +122,8 @@ public:
     void insert(std::uint32_t key, void *value);
 
     /**
-     * @brief Removes the key-value pair that corresponds to the given key from the B+ tree.
+     * @brief Removes the key-value pair that corresponds to the given key from
+     *        the B+ tree.
      */
     void remove(std::uint32_t key);
 
@@ -170,8 +171,9 @@ private:
         std::uint32_t get_page_number() const;
         std::uint32_t get_value_size() const;
         void *get_cell(std::size_t i);
-        std::uint32_t get_cell_key(std::size_t i);
+        std::uint32_t get_cell_key(std::size_t i) const;
         void *get_cell_value(std::size_t i);
+        std::uint32_t get_max_key() const;
 
         void set_type(NodeType type);
         void set_cell_count(std::uint32_t cell_count);
@@ -180,10 +182,12 @@ private:
 
         // leaf only
         std::uint32_t get_next_leaf() const;
+
         void set_next_leaf(std::uint32_t next_leaf);
 
         // interior only
         std::uint32_t get_right_child() const;
+
         void set_right_child(std::uint32_t right_child);
 
     private:
@@ -194,9 +198,12 @@ private:
         void *data;
     };
 
-    std::uint32_t leaf_insert(Node &node, std::size_t pos, std::uint32_t key, void *value);
-    std::uint32_t interior_insert(Node &node, std::size_t pos, std::uint32_t key, std::uint32_t value);
-    std::uint32_t rec_insert(std::uint32_t page_number, std::uint32_t key, void *value);
+    std::uint32_t leaf_insert(Node &node, std::size_t pos,
+                              std::uint32_t key, void *value);
+    std::uint32_t interior_insert(Node &node, std::size_t pos,
+                                  std::uint32_t key, std::uint32_t value);
+    std::uint32_t rec_insert(std::uint32_t page_number,
+                             std::uint32_t key, void *value);
 
     // There are 5 cases when removing cells from leaf nodes:
     // 1. removing cells doesn't require any updates to the tree
