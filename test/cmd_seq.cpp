@@ -128,14 +128,18 @@ void test_command_setup_repeat_end(
 
 	std::remove("fmisql.db");
 	init();
-	// suppress cout?
 	try {
 		for (std::string_view line : setup_lines) {
 			execute_command(line);
 		}
+		// suppress cout because it could be thousands of lines
+		std::cout << "[Suppressed " << n << " lines of output]\n";
+		auto cout_buffer = std::cout.rdbuf();
+		std::cout.rdbuf(nullptr);
 		for (int i = 0; i < n; i++) {
 			execute_command(repeat_line);
 		}
+		std::cout.rdbuf(cout_buffer);
 		for (std::string_view line : end_lines) {
 			execute_command(line);
 		}
