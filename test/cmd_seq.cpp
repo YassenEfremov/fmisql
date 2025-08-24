@@ -424,7 +424,7 @@ void test_command_sequences() {
 		// refer to btree.hpp for explanation of the 5 possible cases that
 		// can occur when removing cells from leaf nodes
 
-		// case 1 - tested in the previous section (Dropping some tables)
+		// case 1 - tested in a previous section (Dropping some tables)
 
 		// case 2
 		// dropping tables Sample1 and Sample2 requires taking cells from
@@ -511,14 +511,32 @@ void test_command_sequences() {
 		});
 	}
 
-	/* Removing a lot of rows in order to cause interior node merges */ {
+	/* Removing from a lot of rows in order to cause interior node merges */ {
 
 		// refer to btree.hpp for explanation of the 5 possible cases that
 		// can occur when removing cells from interior nodes
 
-		// case 1
-		//
+		// case 1 - tested in the previous section (Dropping tables in order to
+		// cause leaf node merges)
 
+		// case 2
+		test_command_setup_repeat_end(
+			{
+				"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                        "F:String, G:String, H:String, I:String, J:String,"
+			                        "K:String, L:String, M:String, N:String, O:String)",
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			512,
+			{
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
+			}
+		);
+
+		// case 5
 		test_command_setup_repeat_end(
 			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
 			                      "F:String, G:String, H:String, I:String, J:String,"
@@ -528,11 +546,13 @@ void test_command_sequences() {
 			{
 				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
 				                    "(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-				// "TableInfo Sample",
-				"Select * FROM Sample",
-				"Remove FROM Sample WHERE A = \"!\""
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
 			}
 		);
+
+		// TODO: remove right child that is not the last leaf node
 	}
 }
 

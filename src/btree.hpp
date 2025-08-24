@@ -240,18 +240,37 @@ private:
         enum {
             // common
             NOTHING_TO_DO,
-            // these are when there is a next leaf
-            TOOK_FROM_RIGHT_SIBLING,
-            MERGED,
-            // these are when this is the last leaf
-            // we can't access the previous leaf, so we don't know wether we
-            // need to take from it or merge with it
-            LEFT_SIBLING
+
+            // leaf finishing actions
+
+            // when there is a next leaf
+            LEAF_TOOK_FROM_RIGHT_SIBLING,
+            LEAF_MERGED,
+            // when this is the last leaf
+            // there is only one action here because we can't access the
+            // previous leaf, so we don't know wether we need to take from it or
+            // merge with it
+            LEAF_LEFT_SIBLING,
+
+            // interior actions
+
+            // there is only one interior action because all the cases for
+            // interior nodes are handled in the interior_remove function,
+            // which in contrast to the interior_insert function requires access
+            // to both the current node AND the parent node
+            INTERIOR_ACTION
+
+            // // when there is a right sibling
+            // INTERIOR_TAKE_FROM_RIGHT_SIBLING,
+            // INTERIOR_MERGE,
+            // // when this is the last right sibling
+            // // again only one action here, same reason as above
+            // INTERIOR_LEFT_SIBLING
         } action;
         std::uint32_t max_key;
     };
     RemoveStatus leaf_remove(Node &node, std::size_t pos, std::uint32_t key);
-    RemoveStatus interior_remove(std::uint32_t page_number, std::uint32_t key);
+    RemoveStatus interior_remove(Node &node, Node *parent, std::uint32_t key);
     RemoveStatus rec_remove(std::uint32_t page_number, std::uint32_t key);
 
     std::uint32_t root_page;
