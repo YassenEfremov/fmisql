@@ -198,12 +198,34 @@ private:
         void *data;
     };
 
-    std::uint32_t leaf_insert(Node &node, std::size_t pos,
-                              std::uint32_t key, void *value);
-    std::uint32_t interior_insert(Node &node, std::size_t pos,
-                                  std::uint32_t key, std::uint32_t value);
-    std::uint32_t rec_insert(std::uint32_t page_number,
+    // This struct is needed because when interior node splits cause inserting
+    // into parent interior nodes, the new key is NOT the maximum key of the
+    // newly inserted child node. Instead it is the key between the two newly
+    // split nodes. This struct makes it a lot easier to know what we have to
+    // insert into the current interior node in such a situation.
+    struct InteriorCell {
+        std::uint32_t key;
+        std::uint32_t value;
+    };
+
+    /**
+     * @brief Insert into leaf
+     */
+    InteriorCell leaf_insert(Node &node, std::size_t pos,
                              std::uint32_t key, void *value);
+
+    /**
+     * @brief Insert into interior
+     */
+    InteriorCell interior_insert(Node &node, std::size_t pos,
+                                 std::uint32_t key, std::uint32_t value);
+
+    /**
+     * @brief Recurse until an appropriate position for key is found, call
+     *        leaf_insert, then backtrack and call interior_insert if necessary
+     */
+    InteriorCell rec_insert(std::uint32_t page_number,
+                            std::uint32_t key, void *value);
 
     // There are 5 cases when removing cells from leaf nodes:
     // 1. removing cells doesn't require any updates to the tree
@@ -212,11 +234,15 @@ private:
     // 3. removing cells (when there IS a next leaf) requires taking cells
     //    from that next leaf, but that next leaf has too few cells, so
     //    we need to merge the two cells
+    //   3.1. if the parent is the root node, then we need to make the current
+    //        node the new root
     // 4. removing cells (when there is NO next leaf) requires taking cells
     //    from the previous leaf
     // 5. removing cells (when there is NO next leaf) requires taking cells
     //    from the previous leaf, but that previous leaf has too few cells,
     //    so we need to merge the two leafs
+    //   5.1. if the parent is the root node, then we need to make the current
+    //        node the new root
 
     // There are 5 cases when removing cells from interior nodes:
     // 1. removing cells doesn't require any updates to the tree
@@ -225,17 +251,16 @@ private:
     // 3. removing cells (when there IS a next interior) requires taking cells
     //    from that next interior, but that next interior has too few cells, so
     //    we need to merge the two cells
+    //   3.1. if the parent is the root node, then we need to make the current
+    //        node the new root
     // 4. removing cells (when there is NO next interior) requires taking cells
     //    from the previous interior
     // 5. removing cells (when there is NO next interior) requires taking cells
     //    from the previous interior, but that previous interior has too few
     //    cells, so we need to merge the two interiors
+    //   5.1. if the parent is the root node, then we need to make the current
+    //        node the new root
 
-    // final case: when the parent of the nodes we are deleting from is the root
-    // 1. we are deleting from leafs and need to merge, so the merged node
-    //    becomes the new root
-    // 2. we are deleting from interiors and need to merge, so the merged node
-    //    becomes the new root
     struct RemoveStatus {
         enum {
             // common
@@ -267,11 +292,35 @@ private:
             // // again only one action here, same reason as above
             // INTERIOR_LEFT_SIBLING
         } action;
-        std::uint32_t max_key;
+        std::size_t pos;
     };
-    RemoveStatus leaf_remove(Node &node, std::size_t pos, std::uint32_t key);
-    RemoveStatus interior_remove(Node &node, Node *parent, std::uint32_t key);
-    RemoveStatus rec_remove(std::uint32_t page_number, std::uint32_t key);
+
+    // The remove family of functions require the parent node and position as a
+    // parameter for a couple of reasons:
+    // 1. there is no way to differentiate right child nodes (both leaf and
+    //    interior) without checking the parent
+    // 2. without the parent node parameter all of the code that takes care of
+    //    taking from siblings or merging has to end up in the rec_remove
+    //    function, which would lead to deep indentation and bad code structure
+
+    /**
+     * @brief Remove from leaf
+     */
+    RemoveStatus leaf_remove(Node &node, std::size_t node_pos,
+                             Node *parent, std::size_t parent_pos);
+
+    /**
+     * @brief Remove from interior
+     */
+    RemoveStatus interior_remove(Node &node, std::size_t node_pos,
+                                 Node *parent, std::size_t parent_pos);
+
+    /**
+     * @brief Recurse until key is found, call leaf_remove, then backtrack and
+     *        call interior_remove if necessary
+     */
+    RemoveStatus rec_remove(Node &node, Node *parent,
+                            std::size_t prev_pos, std::uint32_t key);
 
     std::uint32_t root_page;
     std::uint32_t total_cell_count;

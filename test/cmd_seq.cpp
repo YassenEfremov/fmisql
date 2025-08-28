@@ -128,13 +128,13 @@ void test_command_setup_repeat_end(
 
 	std::remove("fmisql.db");
 	init();
+	auto cout_buffer = std::cout.rdbuf();
 	try {
 		for (std::string_view line : setup_lines) {
 			execute_command(line);
 		}
 		// suppress cout because it could be thousands of lines
 		std::cout << "[Suppressed " << n << " lines of output]\n";
-		auto cout_buffer = std::cout.rdbuf();
 		std::cout.rdbuf(nullptr);
 		for (int i = 0; i < n; i++) {
 			execute_command(repeat_line);
@@ -145,6 +145,7 @@ void test_command_setup_repeat_end(
 		}
 
 	} catch (const std::runtime_error &e) {
+		std::cout.rdbuf(cout_buffer);
 		std::cout << e.what() << '\n';
 		if (condition == Condition::SHOULD_FAIL) {
 			passed++;
@@ -294,7 +295,8 @@ void test_command_sequences() {
 			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
-			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)"
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"ListTables"
 		});
 		// creating 12 tables causes 2 leaf splits
 		test_command_sequence({
@@ -309,7 +311,8 @@ void test_command_sequences() {
 			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
-			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)"
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables"
 		});
 
 		// etc... every 4 new tables cause a leaf split
@@ -372,6 +375,15 @@ void test_command_sequences() {
 			1500,
 			{ "TableInfo Sample" }
 		);
+		// this works but takes like... more than 5 seconds probably
+		// test_command_setup_repeat_end(
+		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+		// 	                      "F:String, G:String, H:String, I:String, J:String,"
+		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
+		// 	"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 	50000,
+		// 	{ "TableInfo Sample" }
+		// );
 	}
 
 	/* Dropping some tables */ {
@@ -447,8 +459,8 @@ void test_command_sequences() {
 		});
 
 		// case 3
-		// dropping tables Sample2 and Sample3 requires merging two of the leaf
-		// nodes into one
+		// dropping table Sample2 requires merging two of the leaf nodes into
+		// one
 		test_command_sequence({
 			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
 			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
@@ -464,6 +476,22 @@ void test_command_sequences() {
 			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
 			"ListTables",
 			"DropTable Sample2",
+			"ListTables"
+		});
+		// case 3.1
+		// dropping table Sample3 requires merging the last two leafs into a new
+		// root
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample3",
 			"ListTables"
 		});
 		// there is one more subcase here, which is when we merge the last two
@@ -486,8 +514,31 @@ void test_command_sequences() {
 			"ListTables"
 		});
 
-		// case 4 - this case cannot occur in the current implementation of the
-		// database because of the constantly incrementing key values
+		// case 4
+		// this case is a bit tricky to test with the current
+		// test_command_setup_repeat_end function.
+		// currently the only way to get into this case is to have two nodes
+		// (none of which is a right child) merge so that the resulting node's
+		// cell count is bigger than the cell count of the next node. only then
+		// does deleting from the next node require taking from the previous one
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample1",
+			"DropTable Sample12",
+			"ListTables"
+		});
 
 		// case 5
 		// dropping table Sample12 requires merging the last two leaf nodes into
@@ -507,6 +558,71 @@ void test_command_sequences() {
 			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
 			"ListTables",
 			"DropTable Sample12",
+			"ListTables"
+		});
+		// case 5.1
+		// dropping table Sample7 requires merging the last two leafs into a new
+		// root
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample7",
+			"ListTables"
+		});
+
+		// just some additional cases to make sure that everything works
+		// (I actually found lots of bugs because of these test cases)
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample1",
+			"DropTable Sample3",
+			"DropTable Sample5",
+			"DropTable Sample7",
+			"DropTable Sample9",
+			"DropTable Sample11",
+			"ListTables"
+		});
+		test_command_sequence({
+			"CreateTable Sample1 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample2 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample3 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample4 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample5 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample6 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample7 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample8 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample9 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample10 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample11 (ID:Int, Name:String, Value:Int)",
+			"CreateTable Sample12 (ID:Int, Name:String, Value:Int)",
+			"ListTables",
+			"DropTable Sample12",
+			"DropTable Sample11",
+			"DropTable Sample10",
+			"DropTable Sample9",
+			"DropTable Sample1",
+			"DropTable Sample2",
+			"DropTable Sample3",
+			"DropTable Sample4",
 			"ListTables"
 		});
 	}
@@ -536,7 +652,82 @@ void test_command_sequences() {
 			}
 		);
 
+		// case 3
+		test_command_setup_repeat_end(
+			{
+				"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                        "F:String, G:String, H:String, I:String, J:String,"
+			                        "K:String, L:String, M:String, N:String, O:String)",
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			767,
+			{
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
+			}
+		);
+		// case 3.1
+		test_command_setup_repeat_end(
+			{
+				"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                        "F:String, G:String, H:String, I:String, J:String,"
+			                        "K:String, L:String, M:String, N:String, O:String)",
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			511,
+			{
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
+			}
+		);
+		// I can't yet test this additional case where we merge the last two
+		// interiors resulting in a new right child because I haven't automated
+		// repeating a command n times, executing a specific command and
+		// repeating another command m times
+
+		// case 4
+		// this case is a bit tricky to test with the current
+		// test_command_setup_repeat_end function.
+		// currently the only way to get into this case is to have two nodes
+		// (none of which is a right child) merge so that the resulting node's
+		// cell count is bigger than the cell count of the next node. only then
+		// does deleting from the next node require taking from the previous one
+		test_command_setup_repeat_end(
+			{
+				"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                        "F:String, G:String, H:String, I:String, J:String,"
+			                        "K:String, L:String, M:String, N:String, O:String)",
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}"
+			},
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			511 + 255,
+			{
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
+			}
+		);
+
 		// case 5
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			767,
+			{
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"!\"",
+				"TableInfo Sample"
+			}
+		);
+		// case 5.1
 		test_command_setup_repeat_end(
 			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
 			                      "F:String, G:String, H:String, I:String, J:String,"
@@ -544,15 +735,19 @@ void test_command_sequences() {
 			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
 			511,
 			{
-				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
-				                    "(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+				"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
 				"TableInfo Sample",
 				"Remove FROM Sample WHERE A = \"!\"",
 				"TableInfo Sample"
 			}
 		);
 
-		// TODO: remove right child that is not the last leaf node
+		// TODO: remove right child that is not the last leaf node ?
+	}
+
+	/* Inserting, removing, inserting, removing, ... */ {
+
+		// TODO
 	}
 }
 
