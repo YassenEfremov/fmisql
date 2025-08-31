@@ -32,8 +32,9 @@ static void execute_command(std::string_view line) {
 
 	switch (statement.type) {
 	case Statement::Type::CREATE_TABLE:
-		create_table(statement.table_name, statement.create_columns,
-			line);
+		create_table(statement.table_name,
+		             statement.create_columns,
+		             line);
 		break;
 
 	case Statement::Type::DROP_TABLE:
@@ -49,7 +50,9 @@ static void execute_command(std::string_view line) {
 		break;
 
 	case Statement::Type::SELECT:
-		select(statement.select_columns, statement.table_name);
+		select(statement.select_columns,
+		       statement.table_name,
+		       statement.condition);
 		break;
 
 	case Statement::Type::REMOVE:
@@ -223,7 +226,7 @@ void test_command_sequences() {
 
 	/* Text big row size */ {
 	
-		// temporary while we implement overflow pages
+		// temporary until we implement overflow pages
 		test_command_sequence({
 			"CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
 			                    "F:String, G:String, H:String, I:String, J:String,"
@@ -411,6 +414,7 @@ void test_command_sequences() {
 
 	/* Removing from tables */ {
 
+		// correct commands
 		test_command_sequence({
 			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
 			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
@@ -429,6 +433,23 @@ void test_command_sequences() {
 			"Remove FROM Sample WHERE Name = \"hello\"",
 			"Select * FROM Sample"
 		});
+
+		// wrong commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE Age = 1"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE Name = 10"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"test\", 12), (2, \"hello\", 10), (3, \"bye\", 4)}",
+			"Remove FROM Sample WHERE ID = \"not an id\""
+		}, Condition::SHOULD_FAIL);
 	}
 
 	/* Dropping tables in order to cause leaf node merges */ {
@@ -748,6 +769,34 @@ void test_command_sequences() {
 	/* Inserting, removing, inserting, removing, ... */ {
 
 		// TODO
+	}
+
+	/* Select with condition */ {
+
+		// correct commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Insert INTO Sample {(1, \"Ivan\", 12), (2, \"Gosho\", 10), (3, \"Pesho\", 4)}",
+			"Select Name, Value FROM Sample WHERE ID >= 2"
+		});
+
+		// wrong commands
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Select Age FROM Sample"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Select * FROM Sample WHERE Age = 21"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Select * FROM Sample WHERE Name = 11"
+		}, Condition::SHOULD_FAIL);
+		test_command_sequence({
+			"CreateTable Sample (ID:Int, Name:String, Value:Int)",
+			"Select * FROM Sample WHERE Value = \"wrong\""
+		}, Condition::SHOULD_FAIL);
 	}
 }
 

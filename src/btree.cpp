@@ -66,7 +66,8 @@ BplusTree &BplusTree::get_schema() {
 SchemaRow BplusTree::get_schema_row_by_table_page(std::uint32_t page_number) {
 	BplusTree &schema_BplusTree = get_schema();
 
-	// TODO: use some form of a select statement instead of a loop
+	// full table scan for now
+	// an index B+ Tree is needed for faster search
 	SchemaRow row;
 	for (void *cell : schema_BplusTree) {
 		row.deserialize(((std::uint8_t *)cell) + key_size);
@@ -83,7 +84,8 @@ SchemaRow BplusTree::get_schema_row_by_table_page(std::uint32_t page_number) {
 SchemaRow BplusTree::get_schema_row_by_table_name(std::string_view table_name) {
 	BplusTree &schema_BplusTree = get_schema();
 
-	// TODO: use some form of a select statement instead of a loop
+	// full table scan for now
+	// an index B+ Tree is needed for faster search
 	SchemaRow row;
 	for (void *cell : schema_BplusTree) {
 		row.deserialize(((std::uint8_t *)cell) + key_size);
@@ -223,7 +225,8 @@ BplusTree::BplusTree(const std::vector<sql_types::Column> &columns)
 		}	
 	}
 	if (key_size + value_size > page_size - leaf_header_size) {
-		throw std::runtime_error("TODO: overflow pages");
+		// overflow pages not currently supported
+		throw std::runtime_error("row too big");
 	}
 	this->value_size = value_size;
 }

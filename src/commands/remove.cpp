@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -37,10 +38,30 @@ void remove(std::string_view table_name, sql_types::Condition condition) {
 
 	std::uint32_t offset = 0;
 	sql_types::Id column_type_id;
+	bool column_found = condition.column_name.empty();
 	for (sql_types::Column column : statement.create_columns) {
 		column_type_id = column.type_id;
 
-		if (column.name.empty() || column.name == condition.column_name) {
+		if (column.name == condition.column_name) {
+			std::visit(overloaded{
+				[&](sql_types::Int _) {
+					if (column_type_id != sql_types::Id::INT) {
+						throw std::runtime_error("invalid comparison with Int value");
+					}
+				},
+				[&](sql_types::String _) {
+					if (column_type_id != sql_types::Id::STRING) {
+						throw std::runtime_error("invalid comparison with String value");
+					}
+				},
+				[&](sql_types::Date _) {
+					if (column_type_id != sql_types::Id::DATE) {
+						throw std::runtime_error("invalid comparison with Date value");
+					}
+				}
+			}, condition.value);
+
+			column_found = true;
 			break;
 		}
 
@@ -56,10 +77,16 @@ void remove(std::string_view table_name, sql_types::Condition condition) {
 			break;
 		}
 	}
+	if (!column_found) {
+		throw std::runtime_error("column " + std::string(condition.column_name) + " doesn't exist");
+	}
 
-
+	// full table scan for now
+	// an index B+ Tree is needed for faster search
 	for (auto it = table_BplusTree.begin(); it != table_BplusTree.end(); ) {
 
+		// if there is no condition (i.e. condition.column_name is empty) the
+		// condition column value gets constructed in a bit of a sketchy way
 		switch (column_type_id) {
 		case sql_types::Id::INT:
 			if (condition.op(*(sql_types::Int *)(((std::uint8_t *)*it) + key_size + offset))) {
@@ -92,59 +119,7 @@ void remove(std::string_view table_name, sql_types::Condition condition) {
 			}
 			break;
 		}
-
-
-
-		// std::visit(overloaded{
-		// 	[&](sql_types::Int lhs) {
-		// 		if (!std::holds_alternative<sql_types::Int>(value))
-		// 			throw std::runtime_error("invalid comparison of Int column");
-		// 		return lhs == std::get<sql_types::Int>(value);
-		// 	},
-		// 	[&](sql_types::String lhs) {
-		// 		if (!std::holds_alternative<sql_types::String>(value))
-		// 			throw std::runtime_error("invalid comparison of String column");
-		// 		if (std::get<sql_types::String>(value).size() > sql_types::max_string_size)
-		// 			throw std::runtime_error("max sql string size is " + std::to_string(sql_types::max_string_size) + " characters");
-		// 		return lhs == std::get<sql_types::String>(value);
-		// 	},
-		// 	[&](sql_types::Date lhs) {
-		// 		if (!std::holds_alternative<sql_types::Date>(value))
-		// 			throw std::runtime_error("invalid comparison of Date column");
-		// 		return lhs == std::get<sql_types::Date>(value);
-		// 	}
-		// }, lhs);
 	}
-
-	// SchemaRow schema_row = BplusTree::get_schema_row_by_table_name(table_name);
-	// Statement statement = parse_line(schema_row.original_sql);
-	// BplusTree &table_BplusTree = BplusTree::get_table(schema_row.root_page);
-
-	// SchemaRow row;
-	// for (void *cell : table_BplusTree) {
-	// 	std::visit(overloaded{
-	// 		[&](sql_types::Int value) {
-	// 			if (statement.create_columns[i].type_id != sql_types::Id::INT)
-	// 				throw std::runtime_error("Int value doesn't match the column it's in");
-	// 			*(sql_types::Int *)(buffer + offset) = value;
-	// 			offset += sql_types::max_int_size;
-	// 		},
-	// 		[&](sql_types::String value) {
-	// 			if (statement.create_columns[i].type_id != sql_types::Id::STRING)
-	// 				throw std::runtime_error("String value doesn't match the column it's in");
-	// 			if (value.size() > sql_types::max_string_size)
-	// 				throw std::runtime_error("max sql string size is " + std::to_string(sql_types::max_string_size) + " characters");
-	// 			std::memcpy(buffer + offset, value.data(), value.size());
-	// 			offset += sql_types::max_string_size;
-	// 		},
-	// 		[&](sql_types::Date value) {
-	// 			if (statement.create_columns[i].type_id != sql_types::Id::DATE)
-	// 				throw std::runtime_error("DATE value doesn't match the column it's in");
-	// 			*(sql_types::Date *)(buffer + offset) = value;
-	// 			offset += sql_types::max_date_size;
-	// 		}
-	// 	}, value);
-	// }
 
 	std::cout << rows_removed << " rows removed.\n";
 }

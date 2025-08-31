@@ -176,6 +176,12 @@ void test_parser() {
 		test_command("  Select  *  FROM  Sample  ");
 		test_command("Select Id FROM Sample WHERE Id = 12");
 		test_command("  Select  Id  FROM  Sample  WHERE  Id  =  12  ");
+		test_command("Select Id FROM Sample WHERE Id=12");
+		test_command("Select Id FROM Sample WHERE Id != 12");
+		test_command("Select Id FROM Sample WHERE Id > 12");
+		test_command("Select Id FROM Sample WHERE Id >= 12");
+		test_command("Select Id FROM Sample WHERE Id < 12");
+		test_command("Select Id FROM Sample WHERE Id <= 12");
 		test_command("Select Name FROM Sample WHERE Name = \"Baba\"");
 		test_command("  Select  Name  FROM  Sample  WHERE  Name  =  \"Baba\"  ");
 		test_command("Select Name FROM Sample WHERE Name = \"Baba\" ORDER BY Name");

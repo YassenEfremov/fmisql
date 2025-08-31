@@ -36,7 +36,8 @@ void cli() {
 			
 				switch (statement.type) {
 				case Statement::Type::CREATE_TABLE:
-					create_table(statement.table_name, statement.create_columns,
+					create_table(statement.table_name,
+					             statement.create_columns,
 					             line_view);
 					break;
 					
@@ -53,7 +54,9 @@ void cli() {
 					break;
 					
 				case Statement::Type::SELECT:
-					select(statement.select_columns, statement.table_name);
+					select(statement.select_columns,
+					       statement.table_name,
+					       statement.condition);
 					break;
 					
 				case Statement::Type::REMOVE:
@@ -91,7 +94,7 @@ void cli() {
 	// 		std::cout << "Goodbye, master ;(\n";
 	// 		break;
 	// 	} else {
-	// 		// TODO
+	// 		
 	// 		std::cout << line << ": unknown command\n";
 	// 	}
 	// }

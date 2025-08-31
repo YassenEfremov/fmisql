@@ -534,6 +534,11 @@ Statement parse_line(std::string_view line) {
 	} else if (command_name == "Select") {
 		std::string_view table_name;
 		std::vector<std::string_view> column_names;
+		sql_types::Condition condition{
+			{},
+			[](sql_types::Value) { return true; }, // select all rows by default
+			{}
+		};
 
 		/**
 		 * Select <columns> FROM <table>
@@ -560,7 +565,7 @@ Statement parse_line(std::string_view line) {
 		table_name = parse_name(line, pos);
 
 		if (pos == std::string_view::npos)
-			return Statement(Statement::Type::SELECT, table_name, {}, column_names);
+			return Statement(Statement::Type::SELECT, table_name, {}, column_names, condition);
 
 		/**
 		 * Select <columns> FROM <table> WHERE <cond>
@@ -576,10 +581,10 @@ Statement parse_line(std::string_view line) {
 		 *                                    pos + next_size
 		 */
 		skip_spaces(line, pos);
-		/*condition =*/ parse_conditions(line, pos);
+		condition = parse_conditions(line, pos);
 
 		if (pos == std::string_view::npos)
-			return Statement(Statement::Type::SELECT, table_name, {}, column_names);
+			return Statement(Statement::Type::SELECT, table_name, {}, column_names, condition);
 
 		/**
 		 * Select <columns> FROM <table> WHERE <cond> ORDER BY <columns>
@@ -599,7 +604,7 @@ Statement parse_line(std::string_view line) {
 		skip_spaces(line, pos);
 		/*columns =*/ parse_order_by_columns(line, pos);
 
-		return Statement(Statement::Type::SELECT, table_name, {}, column_names);
+		return Statement(Statement::Type::SELECT, table_name, {}, column_names, condition);
 
 	} else if (command_name == "Remove") {
 		std::string_view table_name;
