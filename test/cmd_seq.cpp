@@ -768,7 +768,20 @@ void test_command_sequences() {
 
 	/* Inserting, removing, inserting, removing, ... */ {
 
-		// TODO
+		// insert alternating rows, then delete half of them
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"1\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+			                    "(\"2\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			300,
+			{
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"1\"",
+				"TableInfo Sample"
+			}
+		);
 	}
 
 	/* Select with condition */ {
