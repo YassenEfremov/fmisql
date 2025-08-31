@@ -10,8 +10,9 @@
 
 namespace fmisql {
 
-void create_table(std::string_view name, const std::vector<sql_types::Column> &columns,
-    std::string_view original_sql);
+void create_table(std::string_view name,
+                  const std::vector<sql_types::Column> &columns,
+                  std::string_view original_sql);
 
 } // namespace fmisql
 

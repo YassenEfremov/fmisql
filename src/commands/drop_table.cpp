@@ -7,6 +7,7 @@
 #include "../statement.hpp"
 #include "../schema.hpp"
 
+#include <iostream>
 #include <string_view>
 
 

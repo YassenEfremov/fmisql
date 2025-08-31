@@ -10,6 +10,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_EXTENSIONS FALSE)
 
+# uncomment to enable debug prints in the code
+# add_compile_definitions(DEBUG)
+
 add_executable(fmisql
 	src/cli/cli.cpp
 	src/cli/parser.cpp

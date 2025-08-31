@@ -1,19 +1,11 @@
 #ifndef PAGER_HPP
 #define PAGER_HPP
 
-#include "constants.hpp"
-#include "data_types.hpp"
-
 #include <cstdint>
-#include <cstring>
 
-#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
-
-namespace fs = std::filesystem;
 
 namespace fmisql {
 

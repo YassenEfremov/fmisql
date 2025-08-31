@@ -1,18 +1,19 @@
 #include "btree.hpp"
 
 #include "data_types.hpp"
+#include "debug.hpp"
 #include "pager.hpp"
 #include "cli/parser.hpp"
 #include "schema.hpp"
 #include "statement.hpp"
 
+#include <cstdint>
+#include <cstring>
+
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include <cstdint>
-#include <cstring>
 
 
 namespace fmisql {
@@ -308,7 +309,7 @@ BplusTree::InteriorCell BplusTree::leaf_insert(Node &node, std::size_t pos,
 	    + node.get_cell_count() * (key_size + this->value_size);
 
 	if (cell_start + key_size + this->value_size > page_size) {
-		std::cout << "splitting LEAF...\n";
+		DEBUG_PRINT("splitting LEAF...\n");
 		
 		// left node gets one more cell
 		// could have been the other way around, doesn't matter
@@ -335,7 +336,7 @@ BplusTree::InteriorCell BplusTree::leaf_insert(Node &node, std::size_t pos,
 
 		if (node.get_page_number() == this->root_page) {
 			// create new left node and convert current node to interior node
-			std::cout << "making new INTERIOR root...\n";
+			DEBUG_PRINT("making new INTERIOR root...\n");
 
 			Node left_node(NodeType::LEAF, this->value_size);
 			left_node.set_cell_count(left_split_count);
@@ -382,7 +383,7 @@ BplusTree::InteriorCell BplusTree::interior_insert(
 		+ node.get_cell_count() * (interior_value_size + key_size);
 
 	if (cell_start + interior_value_size + key_size > page_size) {
-		std::cout << "splitting INTERIOR...\n";
+		DEBUG_PRINT("splitting INTERIOR...\n");
 
 		// left + right = node cell count because the right child in NOT a cell
 		int right_split_count = node.get_cell_count() / 2;
@@ -442,7 +443,7 @@ BplusTree::InteriorCell BplusTree::interior_insert(
 
 		if (node.get_page_number() == this->root_page) {
 			// create new left node
-			std::cout << "making new INTERIOR root...\n";
+			DEBUG_PRINT("making new INTERIOR root...\n");
 
 			Node left_node(NodeType::INTERIOR, interior_value_size);
 			left_node.set_cell_count(left_split_count);
@@ -469,6 +470,7 @@ BplusTree::InteriorCell BplusTree::interior_insert(
 
 
 		// some alternative approach
+
 		// // these are temporary, we update them after the higher half is copied
 		// int right_split_count = (node.get_cell_count() + 1) / 2;
 		// int left_split_count = node.get_cell_count() + 1 - right_split_count;
@@ -614,7 +616,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 			Node next_leaf(node.get_next_leaf(), this->value_size);
 			if (next_leaf.get_cell_count() - 1 >= min_leaf_cell_count) {
 				// take the smallest key from the next leaf node
-				std::cout << "taking from LEAF...\n";
+				DEBUG_PRINT("taking from LEAF...\n");
 
 				for (int i = node_pos; i < node.get_cell_count() - 1; i++) {
 					node.set_cell(i, node.get_cell_key(i + 1), node.get_cell_value(i + 1));
@@ -636,7 +638,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 
 			} else {
 				// merge with the next leaf node
-				std::cout << "merging LEAF...\n";
+				DEBUG_PRINT("merging LEAF...\n");
 
 				node.set_next_leaf(next_leaf.get_next_leaf());
 				for (int i = node_pos; i < node.get_cell_count() - 1; i++) {
@@ -653,7 +655,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 
 				if (parent->get_cell_count() - 1 < 1) {
 					// merge everything into a new leaf root node
-					std::cout << "merging into new LEAF root...\n";
+					DEBUG_PRINT("merging into new LEAF root...\n");
 
 					parent->set_type(NodeType::LEAF);
 					parent->set_cell_count(node.get_cell_count());
@@ -705,7 +707,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 			Node prev_leaf(*(std::uint32_t *)parent->get_cell_value(parent_pos - 1), this->value_size);
 			if (prev_leaf.get_cell_count() - 1 < min_leaf_cell_count) {
 				// merge with the previous leaf node
-				std::cout << "merging prev LEAF...\n";
+				DEBUG_PRINT("merging prev LEAF...\n");
 
 				prev_leaf.set_next_leaf(node.get_next_leaf());
 				for (int i = 0; i < node.get_cell_count(); i++) {
@@ -715,7 +717,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 
 				if (parent->get_cell_count() - 1 < 1) {
 					// merge everything into a new leaf root node
-					std::cout << "merging into new LEAF root...\n";
+					DEBUG_PRINT("merging into new LEAF root...\n");
 
 					parent->set_type(NodeType::LEAF);
 					parent->set_cell_count(prev_leaf.get_cell_count());
@@ -741,7 +743,7 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 				// implementation of the database, cells get inserted only at
 				// right children, which means that the only way that this case
 				// can occur is if the previous node is the result of a merge
-				std::cout << "taking from prev LEAF...\n";
+				DEBUG_PRINT("taking from prev LEAF...\n");
 
 				node.set_cell_count(node.get_cell_count() + 1);
 				for (int i = node.get_cell_count() - 1; i > 0; i--) {
@@ -786,7 +788,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 
 			if (right_sibling.get_cell_count() - 1 >= min_interior_cell_count) {
 				// take the smallest key from the right sibling node
-				std::cout << "taking from INTERIOR...\n";
+				DEBUG_PRINT("taking from INTERIOR...\n");
 
 				for (int i = node_pos; i < node.get_cell_count() - 1; i++) {
 					node.set_cell(i, node.get_cell_key(i + 1), node.get_cell_value(i + 1));
@@ -805,7 +807,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 
 			} else {
 				// merge with the right sibling node
-				std::cout << "merging INTERIOR...\n";
+				DEBUG_PRINT("merging INTERIOR...\n");
 
 				for (int i = node_pos; i < node.get_cell_count() - 1; i++) {
 					node.set_cell(i, node.get_cell_key(i + 1), node.get_cell_value(i + 1));
@@ -822,7 +824,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 
 				if (parent->get_cell_count() - 1 < 1) {
 					// merge everything into a new interior root node
-					std::cout << "merging into new INTERIOR root...\n";
+					DEBUG_PRINT("merging into new INTERIOR root...\n");
 
 					parent->set_cell_count(node.get_cell_count());
 					parent->set_right_child(node.get_right_child());
@@ -853,7 +855,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 			Node prev_interior(*(std::uint32_t *)parent->get_cell_value(parent_pos - 1), this->value_size);
 			if (prev_interior.get_cell_count() - 1 < min_interior_cell_count) {
 				// merge with the previous interior node
-				std::cout << "merging prev INTERIOR...\n";
+				DEBUG_PRINT("merging prev INTERIOR...\n");
 
 				prev_interior.set_right_child(node.get_right_child());
 				std::uint32_t prev_right_child = prev_interior.get_right_child();
@@ -865,7 +867,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 
 				if (parent->get_cell_count() - 1 < 1) {
 					// merge everything into a new leaf root node
-					std::cout << "merging into new INTERIOR root...\n";
+					DEBUG_PRINT("merging into new INTERIOR root...\n");
 
 					parent->set_cell_count(prev_interior.get_cell_count());
 					parent->set_right_child(prev_interior.get_right_child());
@@ -889,7 +891,7 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 				// implementation of the database, cells get inserted only at
 				// right children, which means that the only way that this case
 				// can occur is if the previous node is the result of a merge
-				std::cout << "taking from prev INTERIOR...\n";
+				DEBUG_PRINT("taking from prev INTERIOR...\n");
 
 				node.set_cell_count(node.get_cell_count() + 1);
 				for (int i = node.get_cell_count() - 1; i > 0; i--) {

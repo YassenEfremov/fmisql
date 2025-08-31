@@ -3,9 +3,13 @@
 #include "../btree.hpp"
 #include "../constants.hpp"
 #include "../data_types.hpp"
+#include "../debug.hpp"
 #include "../cli/parser.hpp"
 #include "../schema.hpp"
 #include "../statement.hpp"
+
+#include <cstdint>
+#include <cstring>
 
 #include <iostream>
 #include <string>
@@ -13,9 +17,6 @@
 #include <stdexcept>
 #include <variant>
 #include <vector>
-
-#include <cstdint>
-#include <cstring>
 
 
 namespace fmisql {
@@ -78,7 +79,7 @@ void insert(std::string_view table_name, const std::vector<std::vector<sql_types
 			i++;
 		}
 
-		std::cout << "inserting...\n";
+		DEBUG_PRINT("inserting...\n");
 		table_BplusTree.insert(table_BplusTree.get_total_cell_count(), buffer);
 	}
 

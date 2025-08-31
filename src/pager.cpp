@@ -1,11 +1,17 @@
 #include "pager.hpp"
 
+#include "constants.hpp"
+
 #include <cstdint>
 
+#include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
+
+namespace fs = std::filesystem;
 
 namespace fmisql {
 
@@ -97,9 +103,6 @@ void Pager::deinit() {
 	}
 
 	Pager::db_file.close();
-	// for (int i = 0; Pager::pages[i]; i++) {
-	// 	delete[] (std::uint8_t *)Pager::pages[i];
-	// }
 }
 
 } // namespace fmisql
