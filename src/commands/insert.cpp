@@ -30,9 +30,6 @@ template<class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 
-// Example inset statements:
-// Insert INTO Sample {(15, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 120)}
-
 void insert(std::string_view table_name, const std::vector<std::vector<sql_types::Value>> &rows) {
 
 	SchemaRow schema_row = BplusTree::get_schema_row_by_table_name(table_name);

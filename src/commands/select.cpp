@@ -19,18 +19,6 @@
 
 namespace fmisql {
 
-// static bool columns_contain(const std::vector<std::string_view> &columns,
-//                             std::string_view target) {
-
-// 	if (columns.empty()) return true;
-
-// 	for (std::string_view column : columns) {
-// 		if (column == target) return true;
-// 	}
-
-// 	return false;
-// }
-
 
 // helper type for the visitor
 template<class... Ts>

@@ -18,10 +18,6 @@
 
 namespace fmisql {
 
-// void write_at_byte(void *dst, std::size_t byte, void *data, std::size_t size) {
-
-// }
-
 BplusTree &BplusTree::create(const std::vector<sql_types::Column> &columns) {
 	BplusTree table_BplusTree(columns);
 	BplusTrees.insert({table_BplusTree.get_root_page(), table_BplusTree});
@@ -409,39 +405,9 @@ BplusTree::InteriorCell BplusTree::interior_insert(
 				right_node.set_cell(i, node.get_cell_key(j), node.get_cell_value(j));
 			}
 
+		} else {
+			throw std::runtime_error("invalid key position while splitting");
 		}
-		
-		/*else if (pos == node.get_cell_count()) {
-			// between last cell and right child of node
-			// TODO
-
-		} else if (left_split_count > pos && pos < node.get_cell_count()) {
-			// between any two cells in the upper half of node
-
-			// TODO: to be tested
-			// int j = node.get_cell_count() - 1;
-			// int i = right_split_count - 1;
-			// for ( ; i != pos; i--, j--) {
-			// 	right_node.set_cell(i, node.get_cell_key(j), node.get_cell_value(j));
-			// }
-			// right_node.set_cell(i, key, &value);
-			// i--;
-			// for ( ; i >= 0; i--, j--) {
-			// 	right_node.set_cell(i, node.get_cell_key(j), node.get_cell_value(j));
-			// }
-
-		} else if (pos == left_split_count) {
-			// at pos
-			// TODO
-		}
-		// TODO
-		// else if (pos == left_split_count - 1) {
-		// 	// in place of the last cell of left node
-
-		// } else {
-
-		// }
-		*/
 
 		if (node.get_page_number() == this->root_page) {
 			// create new left node
@@ -469,78 +435,6 @@ BplusTree::InteriorCell BplusTree::interior_insert(
 			node.set_cell_count(left_split_count);
 			return mid_cell;
 		}
-
-
-		// some alternative approach
-
-		// // these are temporary, we update them after the higher half is copied
-		// int right_split_count = (node.get_cell_count() + 1) / 2;
-		// int left_split_count = node.get_cell_count() + 1 - right_split_count;
-
-		// Node right_node(NodeType::INTERIOR, interior_value_size);
-		// right_node.set_cell_count(right_split_count);
-		// right_node.set_right_child(node.get_right_child());
-		// std::uint32_t mid_key = 0;
-		// bool mid_key_set = false;
-		// for (int i = node.get_cell_count(); i >= node.get_cell_count() / 2; i--) {
-		// 	Node dst_node = i >= left_split_count ? right_node : node;
-		// 	std::size_t dst_i = i % left_split_count;
-
-		// 	if (i == pos && !mid_key_set) {
-		// 		if (pos == node.get_cell_count()) {
-		// 			dst_node.set_right_child(value);
-		// 			i++;
-		// 			mid_key_set = true;
-		// 		} else {
-		// 			dst_node.set_cell(dst_i, key, &value);
-		// 		}
-		// 	} else if (i > pos) {
-		// 		dst_node.set_cell(dst_i, node.get_cell_key(i - 1), node.get_cell_value(i - 1));
-		// 	} else {
-		// 		dst_node.set_cell(dst_i, node.get_cell_key(i), node.get_cell_value(i));
-		// 	}
-		// }
-
-		// right_split_count = node.get_cell_count() / 2;
-		// left_split_count = node.get_cell_count() - right_split_count;
-
-		// if (pos < left_split_count) {
-		// 	mid_key = node.get_cell_key(left_split_count - 1);
-		// 	node.set_right_child(left_split_count - 1);
-		// 	for (int j = left_split_count - 1; j > pos; j--) {
-		// 		node.set_cell(j, node.get_cell_key(j - 1), node.get_cell_value(j - 1));
-		// 	}
-		// 	node.set_cell(pos, key, &value);
-		// } else if (pos > left_split_count) {
-		// 	mid_key = node.get_cell_key(left_split_count);
-		// 	node.set_right_child(*(std::uint32_t *)node.get_cell_value(left_split_count));
-		// } else {
-		// 	mid_key = key;
-		// 	node.set_right_child(value);
-		// }
-
-
-		// if (node.get_page_number() == this->root_page) {
-		// 	// create new left node
-
-		// 	Node left_node(NodeType::INTERIOR, interior_value_size);
-		// 	left_node.set_cell_count(left_split_count);
-		// 	left_node.set_right_child(node.get_right_child());
-		// 	for (int i = 0; i < left_split_count; i++) {
-		// 		left_node.set_cell(i, node.get_cell_key(i), node.get_cell_value(i));
-		// 	}
-
-		// 	node.set_cell_count(1);
-		// 	node.set_right_child(right_node.get_page_number());
-		// 	std::uint32_t temp_value = left_node.get_page_number();
-		// 	node.set_cell(0, mid_key, &temp_value);
-
-		// } else {
-		// 	// insert into parent interior node
-		// 	node.set_cell_count(left_split_count);
-		// 	// node.set_right_child(value);
-		// 	return right_node.get_page_number();
-		// }
 
 	} else {
 		if (pos < node.get_cell_count()) {
@@ -628,13 +522,10 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 					next_leaf.set_cell(i, next_leaf.get_cell_key(i + 1), next_leaf.get_cell_value(i + 1));
 				}
 				next_leaf.set_cell_count(next_leaf.get_cell_count() - 1);
-
-				// return RemoveStatus{ RemoveStatus::LEAF_TOOK_FROM_RIGHT_SIBLING,
-				//                      node.get_max_key() };
-				// update parent
 				
-				std::uint32_t temp = node.get_page_number();
-				parent->set_cell(parent_pos, node.get_max_key(), &temp);
+				std::uint32_t node_page_number = node.get_page_number();
+				parent->set_cell(parent_pos, node.get_max_key(),
+				                             &node_page_number);
 
 				return RemoveStatus { RemoveStatus::NOTHING_TO_DO, 0 };
 
@@ -653,10 +544,6 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 				}
 				node.set_cell_count(node.get_cell_count() - 1 + next_leaf.get_cell_count());
 
-				// return RemoveStatus{ RemoveStatus::LEAF_MERGED,
-				//                      node.get_max_key() };
-				// update parent
-
 				if (parent->get_cell_count() - 1 < 1) {
 					// merge everything into a new leaf root node
 					DEBUG_PRINT("merging into new LEAF root...\n");
@@ -673,27 +560,9 @@ BplusTree::RemoveStatus BplusTree::leaf_remove(
 					return RemoveStatus { RemoveStatus::NOTHING_TO_DO, 0 };
 				}
 
-				std::uint32_t temp = node.get_page_number();
-				parent->set_cell(parent_pos, node.get_max_key(), &temp);
-
-				// if (parent_pos == parent->get_cell_count() - 1) {
-				// 	parent->set_right_child(node.get_page_number());
-				// 	parent->set_cell_count(parent->get_cell_count() - 1);
-				// } else {
-				// 	std::uint32_t temp = node.get_page_number();
-				// 	parent->set_cell(parent_pos + 1, node.get_max_key(), &temp);
-				// 	for (int j = parent_pos; j < parent->get_cell_count() - 1; j++) {
-				// 		parent->set_cell(j, parent->get_cell_key(j + 1), parent->get_cell_value(j + 1));
-				// 	}
-				// 	parent->set_cell_count(parent->get_cell_count() - 1);
-				// }
-
-				// std::uint32_t min_interior_cell_count = (((page_size - interior_header_size) / (interior_value_size + key_size)) + 1) / 2;
-				// if (parent->get_page_number() != this->root_page
-				// 	&& parent->get_cell_count() - 1 < min_interior_cell_count) {
-				// 	return RemoveStatus { RemoveStatus::INTERIOR_ACTION,
-				// 						  parent_pos + 1 };
-				// }
+				std::uint32_t node_page_number = node.get_page_number();
+				parent->set_cell(parent_pos, node.get_max_key(),
+				                             &node_page_number);
 
 				return RemoveStatus { RemoveStatus::INTERIOR_ACTION,
 				                      parent_pos + 1 };
@@ -847,8 +716,9 @@ BplusTree::RemoveStatus BplusTree::interior_remove(
 					return RemoveStatus { RemoveStatus::NOTHING_TO_DO, 0 };
 				}
 
-				// std::uint32_t node_page_number = node.get_page_number();
-				// parent->set_cell(parent_pos + 1, parent->get_cell_key(parent_pos + 1), &node_page_number);
+				std::uint32_t node_page_number = node.get_page_number();
+				// if (parent_pos < parent->get_cell_count() - 1)
+				parent->set_cell(parent_pos, parent->get_cell_key(parent_pos + 1), &node_page_number);
 
 				return RemoveStatus { RemoveStatus::INTERIOR_ACTION,
 				                      parent_pos + 1 };

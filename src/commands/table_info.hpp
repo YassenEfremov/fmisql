@@ -1,16 +1,8 @@
 #ifndef TABLE_INFO_HPP
 #define TABLE_INFO_HPP
 
-// #include "../data_types.hpp"
-
 #include <string_view>
-// #include <unordered_map>
 
-
-// struct TableInfo {
-// 	std::unordered_map<std::string, DataType> columns;
-// 	long records;
-// };
 
 namespace fmisql {
 	

@@ -10,32 +10,6 @@
 #include <cstddef>
 
 
-// struct Token {
-
-
-// }
-// enum Token {
-// 	// commands
-// 	CREATE_TABLE,
-// 	DROP_TABLE,
-// 	LIST_TABLES,
-// 	TABLE_INFO,
-// 	SELECT,
-// 	REMOVE,
-// 	INSERT,
-
-// 	// select specific
-// 	WHERE,
-// 	NOT,
-// 	AND,
-// 	OR,
-// 	ORDER_BY,
-// 	JOIN,
-// 	DISTINCT,
-
-
-// };
-
 namespace fmisql {
 
 /**

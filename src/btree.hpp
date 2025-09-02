@@ -263,27 +263,27 @@ private:
 
     struct RemoveStatus {
         enum {
-            // common
             NOTHING_TO_DO,
-
-            // leaf finishing actions
-
-            // when there is a next leaf
-            LEAF_TOOK_FROM_RIGHT_SIBLING,
-            LEAF_MERGED,
-            // when this is the last leaf
-            // there is only one action here because we can't access the
-            // previous leaf, so we don't know wether we need to take from it or
-            // merge with it
-            LEAF_LEFT_SIBLING,
-
-            // interior actions
 
             // there is only one interior action because all the cases for
             // interior nodes are handled in the interior_remove function,
             // which in contrast to the interior_insert function requires access
             // to both the current node AND the parent node
             INTERIOR_ACTION
+
+
+            // old leftover actions
+
+            // // leaf finishing actions
+
+            // // when there is a next leaf
+            // LEAF_TOOK_FROM_RIGHT_SIBLING,
+            // LEAF_MERGED,
+            // // when this is the last leaf
+            // // there is only one action here because we can't access the
+            // // previous leaf, so we don't know wether we need to take from it or
+            // // merge with it
+            // LEAF_LEFT_SIBLING,
 
             // // when there is a right sibling
             // INTERIOR_TAKE_FROM_RIGHT_SIBLING,

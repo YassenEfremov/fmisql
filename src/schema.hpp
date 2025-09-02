@@ -3,9 +3,9 @@
 
 #include "data_types.hpp"
 
-#include <string_view>
-
 #include <cstdint>
+
+#include <string_view>
 
 
 namespace fmisql {

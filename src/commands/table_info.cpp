@@ -6,6 +6,8 @@
 #include "../schema.hpp"
 #include "../statement.hpp"
 
+#include <cstdint>
+
 #include <iostream>
 #include <string_view>
 
@@ -40,8 +42,6 @@ void table_info(std::string_view table_name) {
 	std::cout << "Total " << row_count << " rows ("
 		<< static_cast<double>(row_count * table_BplusTree.get_value_size())/1000
 		<< " KB data) in the table\n";
-
-	// throw std::runtime_error("There is no such table!");
 }
 
 } // namespace fmisql

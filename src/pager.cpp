@@ -58,17 +58,12 @@ void *Pager::get_page(int page_number) {
 		// cache miss
 		void *new_page = new std::uint8_t[page_size];
 
-		// std::cout << "debug: seeking to " << page_number * page_size << '\n';
 		db_file.seekg(page_number * page_size);
 		db_file.read((char *)new_page, page_size);
 		if (db_file.fail())
 			std::cerr << "error while reading database file\n";
 
 		pages[page_number] = new_page;
-
-		// if (page_number >= file_page_count) {
-		// 	file_page_count++;
-		// }
 	}
 
 	return pages[page_number];
@@ -93,9 +88,7 @@ void Pager::flush(int page_number) {
 void Pager::deinit() {
 	for (int i = 0; i < pages.size(); i++) {
 		if (Pager::pages[i] != nullptr) {
-			// TODO: don't write unchanged pages!
 	
-			// std::cout << "debug: writing page\n";
 			Pager::flush(i);
 			delete[] (std::uint8_t *)Pager::pages[i];
 			Pager::pages[i] = nullptr;

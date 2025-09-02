@@ -3,12 +3,12 @@
 #include "btree.hpp"
 #include "data_types.hpp"
 
+#include <cstdint>
+#include <cstring>
+
 #include <stdexcept>
 #include <string>
 #include <string_view>
-
-#include <cstdint>
-#include <cstring>
 
 
 namespace fmisql {

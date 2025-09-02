@@ -53,7 +53,7 @@ constexpr std::uint32_t interior_header_size = type_size
 
 
 
-
+// old constants
 
 // // common node header layout
 // constexpr std::uint32_t node_type_size = sizeof(std::uint8_t);
