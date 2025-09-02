@@ -378,15 +378,28 @@ void test_command_sequences() {
 			1500,
 			{ "TableInfo Sample" }
 		);
-		// this works but takes like... more than 5 seconds probably
-		// test_command_setup_repeat_end(
-		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
-		// 	                      "F:String, G:String, H:String, I:String, J:String,"
-		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
-		// 	"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
-		// 	50000,
-		// 	{ "TableInfo Sample" }
-		// );
+		// this works, but:
+		//   in debug configuration it takes like... 7 seconds to complete
+		//   in release configuration it takes maybe 1 second to complete
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			50000,
+			{ "TableInfo Sample" }
+		);
+		// similar to above:
+		//   in debug configuration it takes maybe 17 seconds to complete
+		//   in release configuration it takes maybe 2 seconds to complete
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			100000,
+			{ "TableInfo Sample" }
+		);
 	}
 
 	/* Dropping some tables */ {
@@ -764,6 +777,24 @@ void test_command_sequences() {
 		);
 
 		// TODO: remove right child that is not the last leaf node ?
+		// test_command_setup_repeat_end(
+		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+		// 	                      "F:String, G:String, H:String, I:String, J:String,"
+		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
+		// 	"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 	511,
+		// 	{
+		// 		"Insert INTO Sample {(\"!\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 		"Insert INTO Sample {(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),",
+		// 		                    "(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),",
+		// 		                    "(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),",
+		// 		                    "(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),",
+		// 		                    "(\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 		"TableInfo Sample",
+		// 		"Remove FROM Sample WHERE A = \"!\"",
+		// 		"TableInfo Sample"
+		// 	}
+		// );
 	}
 
 	/* Inserting, removing, inserting, removing, ... */ {
@@ -782,6 +813,38 @@ void test_command_sequences() {
 				"TableInfo Sample"
 			}
 		);
+
+		// insert sequence of rows, then remove part of the sequence
+		test_command_setup_repeat_end(
+			{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+			                      "F:String, G:String, H:String, I:String, J:String,"
+			                      "K:String, L:String, M:String, N:String, O:String)" },
+			"Insert INTO Sample {(\"1\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+			                    "(\"2\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+			                    "(\"3\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+			171,
+			{
+				"TableInfo Sample",
+				"Remove FROM Sample WHERE A = \"2\"",
+				"TableInfo Sample"
+			}
+		);
+
+		// remove lots of rows from the end
+		// test_command_setup_repeat_end(
+		// 	{ "CreateTable Sample (A:String, B:String, C:String, D:String, E:String,"
+		// 	                      "F:String, G:String, H:String, I:String, J:String,"
+		// 	                      "K:String, L:String, M:String, N:String, O:String)" },
+		// 	"Insert INTO Sample {(\"1\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+		// 	                    "(\"2\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\"),"
+		// 	                    "(\"3\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\",\"s\")}",
+		// 	200,
+		// 	{
+		// 		"TableInfo Sample",
+		// 		"Remove FROM Sample WHERE A = \"2\"",
+		// 		"TableInfo Sample"
+		// 	}
+		// );
 	}
 
 	/* Select with condition */ {
